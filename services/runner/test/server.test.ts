@@ -160,6 +160,9 @@ const currentHash: { value: string } = { value: "11".repeat(32) };
 
 function fakeSettlement(calls: string[]): Settlement {
   return {
+    initializeSettlementBinding: async () => ix,
+    authorizeSettlementOrder: async () => (calls.push("authorizeOrder"), ix),
+    settlementOrder: async () => null,
     requestReview: async (input: any) => (calls.push(`propose:${input.txIndex}`), ix),
     guardedExecute: async (input: any) => {
       calls.push(`execute:${input.txIndex}`);
@@ -244,6 +247,20 @@ test("POST /frontend/propose returns the request_review instruction in wire form
   } finally {
     s.close();
   }
+});
+
+test("order routes preserve bearer protection and return unsigned authorization or chain lookup results", async () => {
+  const s = await serveSettlement("tok");
+  try {
+    assert.equal((await s.post("/frontend/orders/authorize", {}, null)).status, 401);
+    const authorized = await s.post("/frontend/orders/authorize", {});
+    assert.equal(authorized.status, 200);
+    assert.deepEqual(Object.keys(await authorized.json() as object), ["orderInstruction"]);
+    const url = `${s.base}/frontend/orders/${Keypair.generate().publicKey.toBase58()}/${"11".repeat(32)}`;
+    assert.equal((await fetch(url)).status, 401);
+    assert.equal((await fetch(url, { headers: { authorization: "Bearer tok" } })).status, 404);
+    assert.deepEqual(s.calls, ["authorizeOrder"]);
+  } finally { s.close(); }
 });
 
 test("POST /frontend/execute maps settlement errors to their status and hides internal errors", async () => {

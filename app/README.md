@@ -2,12 +2,16 @@
 
 Next.js web app: dashboard, transactions, review (verdict + summary + claim vs decoded reality), members, settings and /status. Propose, request review, vote and guarded execute.
 
+New treasuries can set a separate **Back-office authority** at creation. Their payments additionally need an exact, unconsumed settlement order. The **Settlement orders** screen lets that wallet authorize immutable terms and inspect chain state; the proposal review asks for the exact business obligation ID when executing. Up to eight invited members fit the atomic creation transaction with its binding. See [demo steps](../docs/colosseum/README.md) and [Vercel plus Railway setup](../deploy/README.md).
+
 The `ui` branch refreshes the full treasury workspace: navigation, onboarding, balance cards, transaction filters, members, preferences, forms and payment reviews. Full decoded recipient addresses remain visible, rejected destinations are marked using the on-chain verdict, and mobile dialogs stay inside the viewport. See [UI redesign plan](docs/ui-workspace-redesign.md). Screenshots use isolated browser fixtures; the product never substitutes those for chain data.
 
 ## Run
 
 ```bash
-npm install --workspaces=false
+cd ..
+npm ci --ignore-scripts
+cd app
 npm run dev
 npm test
 npm run typecheck

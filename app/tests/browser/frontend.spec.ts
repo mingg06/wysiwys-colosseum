@@ -106,6 +106,11 @@ test("server rejects anonymous submissions and settlement preparation", async ({
     data: { action: "execute" },
   });
   expect(prepare.status()).toBe(401);
+  const order = await request.post("/api/settlement-orders", {
+    headers,
+    data: { authority: "unauthenticated" },
+  });
+  expect(order.status()).toBe(401);
 });
 
 // Layout fixtures are isolated to browser tests. Product pages never use fabricated treasury data.

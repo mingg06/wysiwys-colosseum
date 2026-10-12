@@ -4,7 +4,7 @@ import * as sqds from "@sqds/multisig";
 import { Keypair, PublicKey, SystemProgram, SYSVAR_INSTRUCTIONS_PUBKEY, type Connection, type TransactionInstruction } from "@solana/web3.js";
 import { decodeVaultTransaction } from "@wysiwys/decoder";
 import idlJson from "@wysiwys/shared/idl/wysiwys_guard.json" with { type: "json" };
-import { policyChangePda, txIndexSeed } from "@wysiwys/shared";
+import { policyChangePda, txIndexSeed, parseSettlementOrderRequest, settlementBindingPda, settlementOrderPda, settlementOrderId, type SettlementOrderView } from "@wysiwys/shared";
 
 // Builds the guard instructions the app asks for. The app validates them again and the member signs;
 // the guard and Squads enforce every rule on chain, so a wrong instruction can only fail, not pay.
@@ -24,7 +24,7 @@ export class SettlementError extends Error {
 export type WireInstruction = { programId: string; keys: { pubkey: string; isSigner: boolean; isWritable: boolean }[]; data: string };
 export type Ids = { multisig: string; txIndex: string; member: string };
 export type TokenInfo = { mint: string; symbol: string; decimals: number };
-export type GuardedGroup = { multisig: string; programId: string; executorPda: string; vaultIndex: number; guardReady: true; token?: TokenInfo };
+export type GuardedGroup = { multisig: string; programId: string; executorPda: string; vaultIndex: number; guardReady: true; token?: TokenInfo; settlementAuthority?: string };
 /** GuardConfig values for new treasuries, from deployments/devnet.json `guard` (same strings). */
 export type GuardSetup = {
   forwarderProgram: string;
@@ -34,7 +34,7 @@ export type GuardSetup = {
   maxReviewLifetime: string;
   reviewDeadlineSecs: string;
 };
-export type PreparedGroup = Omit<GuardedGroup, "guardReady"> & { guardReady: false; instruction: TransactionInstruction };
+export type PreparedGroup = Omit<GuardedGroup, "guardReady"> & { guardReady: false; instruction: TransactionInstruction; settlementInstruction?: TransactionInstruction };
 export type Destination = { kind: "sol" | "spl"; destination: string };
 
 export function toWire(ix: TransactionInstruction): WireInstruction {
@@ -82,6 +82,44 @@ export function createSettlement(o: { connection: Connection; programId: PublicK
     if (!info || !info.owner.equals(programId)) throw new SettlementError(404, "multisig has no guard config");
   }
 
+  async function bindingOf(ms: PublicKey): Promise<PublicKey | null> {
+    const info = await connection.getAccountInfo(settlementBindingPda(programId, ms), "confirmed");
+    if (!info) return null;
+    if (!info.owner.equals(programId)) throw new SettlementError(409, "invalid settlement binding");
+    const binding = program.coder.accounts.decode("settlementBinding", info.data) as { multisig: PublicKey; authority: PublicKey };
+    if (!binding.multisig.equals(ms)) throw new SettlementError(409, "invalid settlement binding");
+    return binding.authority;
+  }
+
+  async function initializeSettlementBinding(input: unknown): Promise<TransactionInstruction> {
+    try {
+      const i = input as Record<string, string>;
+      const ms = new PublicKey(i.multisig), creator = new PublicKey(i.creator), createKey = new PublicKey(i.createKey), authority = new PublicKey(i.authority);
+      if (!sqds.getMultisigPda({ createKey })[0].equals(ms) || authority.equals(PublicKey.default) || !PublicKey.isOnCurve(authority.toBytes())) throw new Error();
+      return await program.methods.initializeSettlementBinding(authority).accountsPartial({ config: configPda(ms), multisig: ms, createKey, settlementBinding: settlementBindingPda(programId, ms), payer: creator, systemProgram: SystemProgram.programId }).instruction();
+    } catch { throw new SettlementError(400, "invalid settlement binding identifiers"); }
+  }
+
+  async function authorizeSettlementOrder(input: unknown): Promise<TransactionInstruction> {
+    let parsed: ReturnType<typeof parseSettlementOrderRequest>;
+    try { parsed = parseSettlementOrderRequest(input); } catch { throw new SettlementError(400, "invalid settlement order terms"); }
+    const { authority, terms: t } = parsed;
+    return program.methods.authorizeSettlementOrder(Array.from(t.orderId), t.allowedVaults, t.actionKind, t.destination, t.recipient, t.mint, new anchor.BN(t.amount.toString()), t.decimals, new anchor.BN(t.expiresAt.toString()))
+      .accountsPartial({ authority, settlementOrder: settlementOrderPda(programId, authority, t.orderId), payer: authority, systemProgram: SystemProgram.programId }).instruction();
+  }
+
+  async function settlementOrder(authority: string, orderIdHex: string): Promise<SettlementOrderView | null> {
+    let key: PublicKey;
+    try { key = new PublicKey(authority); if (!/^[a-f0-9]{64}$/.test(orderIdHex)) throw new Error(); } catch { throw new SettlementError(400, "invalid order identifiers"); }
+    const address = settlementOrderPda(programId, key, Buffer.from(orderIdHex, "hex"));
+    const info = await connection.getAccountInfo(address, "confirmed");
+    if (!info) return null;
+    if (!info.owner.equals(programId)) throw new SettlementError(409, "invalid order owner");
+    const r = program.coder.accounts.decode("settlementOrder", info.data) as any;
+    if (!r.authority.equals(key) || Buffer.from(r.orderId).toString("hex") !== orderIdHex) throw new SettlementError(409, "invalid order binding");
+    return { address: address.toBase58(), authority, orderIdHex, allowedVaults: r.allowedVaults.map((k: PublicKey) => k.toBase58()), actionKind: r.actionKind, destination: r.destination.toBase58(), recipient: r.recipient.toBase58(), mint: r.mint.toBase58(), amount: r.amount.toString(), decimals: r.decimals, expiresAt: r.expiresAt.toString(), consumed: r.consumed, settledMultisig: r.settledMultisig.toBase58(), settledTxIndex: r.settledTxIndex.toString(), settledTxHash: Buffer.from(r.settledTxHash).toString("hex"), settledAt: r.settledAt.toString() };
+  }
+
   /** request_review for a proposal that the same transaction creates (PDAs only, no reads of it). */
   async function requestReview(input: unknown): Promise<TransactionInstruction> {
     const { multisig, txIndex, member } = parseIds(input);
@@ -110,6 +148,10 @@ export function createSettlement(o: { connection: Connection; programId: PublicK
   async function guardedExecute(input: unknown): Promise<TransactionInstruction> {
     const { multisig, txIndex } = parseIds(input);
     await requireGuarded(multisig);
+    const authority = await bindingOf(multisig);
+    const externalId = (input as Record<string, unknown>).orderExternalId;
+    if (authority && (typeof externalId !== "string" || !externalId.length || externalId.length > 128)) throw new SettlementError(400, "order ID is required for this treasury");
+    const order = authority ? settlementOrderPda(programId, authority, settlementOrderId(externalId as string)) : programId;
     const review = reviewPda(multisig, txIndex);
     const r = await (program.account as any).review.fetchNullable(review, "confirmed");
     if (!r || Object.keys(r.status)[0] !== "approved") throw new SettlementError(409, "review is not approved");
@@ -123,7 +165,7 @@ export function createSettlement(o: { connection: Connection; programId: PublicK
     return program.methods
       .guardedExecute()
       .accountsPartial({
-        settlementOrder: programId, // Anchor's absent optional-account sentinel for legacy treasuries.
+        settlementBinding: settlementBindingPda(programId, multisig), settlementOrder: order,
         config: configPda(multisig), review, multisig, proposal, vaultTransaction,
         destination: new PublicKey(destination), executor, squadsProgram: sqds.PROGRAM_ID, instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
       })
@@ -197,9 +239,11 @@ export function createSettlement(o: { connection: Connection; programId: PublicK
     }
     const info = await connection.getAccountInfo(configPda(ms), "confirmed");
     if (!info || !info.owner.equals(programId)) return null;
+    const authority = await bindingOf(ms);
     return {
       multisig: ms.toBase58(), programId: programId.toBase58(), executorPda: executorPda(ms).toBase58(), vaultIndex: 0, guardReady: true,
       ...(token ? { token } : {}),
+      ...(authority ? { settlementAuthority: authority.toBase58() } : {}),
     };
   }
 
@@ -241,14 +285,16 @@ export function createSettlement(o: { connection: Connection; programId: PublicK
       )
       .accountsPartial({ multisig: ms, createKey, config: configPda(ms), executor: executorPda(ms), payer: creator })
       .instruction();
+    const settlementInstruction = i.settlementAuthority === undefined ? undefined : await initializeSettlementBinding({ multisig: ms.toBase58(), creator: creator.toBase58(), createKey: createKey.toBase58(), authority: i.settlementAuthority });
     return {
       multisig: ms.toBase58(), programId: programId.toBase58(), executorPda: executorPda(ms).toBase58(), vaultIndex: 0, guardReady: false,
       ...(token ? { token } : {}),
       instruction,
+      ...(settlementInstruction ? { settlementInstruction, settlementAuthority: String(i.settlementAuthority) } : {}),
     };
   }
 
-  return { requestReview, guardedExecute, guardedConfigExecute, applyPolicyChange, currentPolicyHash, destinationOf, guardedGroup, prepareGuardedGroup };
+  return { requestReview, guardedExecute, guardedConfigExecute, applyPolicyChange, currentPolicyHash, destinationOf, guardedGroup, prepareGuardedGroup, initializeSettlementBinding, authorizeSettlementOrder, settlementOrder };
 }
 
 export type Settlement = ReturnType<typeof createSettlement>;

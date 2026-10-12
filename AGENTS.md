@@ -40,7 +40,7 @@ packages/shared/               Seeds, events, report layout, reason codes, tx_ha
 packages/decoder/              Pure TS decoder + policy + summary
 workflow/                      CRE workflow (TypeScript)
 services/runner/               EC2: event adapter (listener + authenticated CRE trigger) + SQLite
-app/                           Next.js app (standalone install, own lockfile, own docs/)
+app/                           Next.js app (root npm workspace, own docs/)
 scripts/                       bootstrap, e2e, scenario builders
 deployments/devnet.json        Addresses written by bootstrap
 docs/                          Architecture, plans, specs

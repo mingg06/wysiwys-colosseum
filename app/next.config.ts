@@ -10,5 +10,7 @@ const config: NextConfig = {
   // node_modules. Turbopack must resolve from there; output stays in app/.
   turbopack: { root: path.resolve("..") },
   outputFileTracingRoot: path.resolve(".."),
+  // Also trace the public manifest for Node routes and explicit deployment-file overrides.
+  outputFileTracingIncludes: { "/api/**": ["../deployments/devnet.json"] },
 };
 export default config;

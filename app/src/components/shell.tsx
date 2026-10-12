@@ -32,6 +32,7 @@ import { shortAddress } from "@/components/squads/treasury-ui";
 const nav = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Transactions", href: "/transactions", icon: ArrowLeftRight },
+  { label: "Settlement orders", href: "/settlement-orders", icon: ShieldCheck },
   { label: "Members", href: "/members", icon: Users },
   { label: "Settings", href: "/settings", icon: Settings },
 ] as const;
@@ -200,7 +201,7 @@ function Workspace({ children }: { children: ReactNode }) {
         </main>
         <footer className="flex flex-wrap justify-between gap-2 border-t px-5 py-5 text-[11px] text-muted-foreground sm:px-8 lg:px-10">
           <span>Wysiwys · What you see is what you sign.</span>
-          <span>Solana Devnet · Test keys and funds only</span>
+          <span>Devnet, test keys only</span>
         </footer>
       </div>
       <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>

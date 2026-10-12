@@ -61,6 +61,11 @@ import { assertDevnet } from "./network";
 import { buildPolicyChangeInstruction, readPolicyChange } from "./policy";
 import type { PolicyV1 } from "@wysiwys/shared";
 import {
+  authorizationInstruction,
+  bindingInstruction,
+  validateExactInstruction,
+} from "./settlement-orders";
+import {
   buildGuardedPaymentInstruction,
   buildPaymentInstructions,
   buildPaymentProposal,
@@ -93,6 +98,7 @@ type ContextValue = {
     kind?: "guarded" | "standard",
     // The treasury's own payment policy; omitted means the deployment's default policy.
     policy?: PolicyV1,
+    settlementAuthority?: string,
   ) => Promise<string | undefined>;
   openGroup: (address: string) => void;
   invite: (address: string) => Promise<string | undefined>;
@@ -118,7 +124,14 @@ type ContextValue = {
     action: VoteAction,
     reviewed?: readonly string[],
   ) => Promise<void>;
-  execute: (index: bigint, reviewed?: readonly string[]) => Promise<void>;
+  execute: (
+    index: bigint,
+    reviewed?: readonly string[],
+    orderExternalId?: string,
+  ) => Promise<void>;
+  authorizeOrder: (
+    request: import("@wysiwys/shared").SettlementOrderRequest,
+  ) => Promise<boolean>;
   proposePayment: (input: PaymentInput) => Promise<string | undefined>;
   deploymentToken?: SquadConfig["token"];
   // Voted policy changes on guarded treasuries (member-only, wallet-signed).
@@ -436,12 +449,14 @@ export function SquadProvider({ children }: { children: ReactNode }) {
     action: "propose" | "execute" | "configExecute" | "policyApply",
     index: bigint,
     member: PublicKey,
+    orderExternalId?: string,
   ): Promise<{ guardInstruction: WireInstruction }> {
     const body = JSON.stringify({
       multisig: config!.multisig,
       action,
       index: index.toString(),
       member: member.toBase58(),
+      ...(orderExternalId !== undefined ? { orderExternalId } : {}),
     });
     const response = await fetch("/api/squads/prepare", {
       method: "POST",
@@ -455,6 +470,40 @@ export function SquadProvider({ children }: { children: ReactNode }) {
     if (!response.ok)
       throw new Error(result.error || "Settlement service unavailable.");
     return result;
+  }
+  async function authorizeOrder(
+    request: import("@wysiwys/shared").SettlementOrderRequest,
+  ) {
+    return Boolean(
+      await run(
+        "authorize settlement order",
+        async (_rpc, key) => {
+          if (key.toBase58() !== request.authority)
+            throw new Error("Connect the back-office authority wallet.");
+          const guard = deployment.current?.guardProgram;
+          if (!guard) throw new Error("Guard is unavailable.");
+          const body = JSON.stringify(request);
+          const response = await fetch("/api/settlement-orders", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(await auth.authorizeRequest("/api/settlement-orders", body)),
+            },
+            body,
+          });
+          const result = await response.json();
+          if (!response.ok)
+            throw new Error(result.error || "Order preparation failed.");
+          return [
+            validateExactInstruction(
+              fromWire(result.orderInstruction),
+              authorizationInstruction(new PublicKey(guard), request),
+            ),
+          ];
+        },
+        { withoutGroup: true },
+      ),
+    );
   }
   async function vote(
     index: bigint,
@@ -523,7 +572,11 @@ export function SquadProvider({ children }: { children: ReactNode }) {
       return [buildVote(action, new PublicKey(config!.multisig), index, key)];
     });
   }
-  async function execute(index: bigint, reviewed?: readonly string[]) {
+  async function execute(
+    index: bigint,
+    reviewed?: readonly string[],
+    orderExternalId?: string,
+  ) {
     await run("execute", async (rpc, key) => {
       const record = await readProposal(rpc, config!, index);
       if (!record) throw new Error("Proposal not found.");
@@ -612,7 +665,18 @@ export function SquadProvider({ children }: { children: ReactNode }) {
         record.transaction.message.addressTableLookups.length
       )
         throw new Error("Proposal is not executable.");
-      const prepared = await prepare(route, index, key);
+      if (
+        route === "execute" &&
+        config!.settlementAuthority &&
+        !orderExternalId
+      )
+        throw new Error("Enter the authorized settlement order ID.");
+      const prepared = await prepare(
+        route,
+        index,
+        key,
+        route === "execute" ? orderExternalId : undefined,
+      );
       return buildGuardedExecute(
         fromWire(prepared.guardInstruction),
         new PublicKey(config!.guardProgram),
@@ -972,6 +1036,7 @@ export function SquadProvider({ children }: { children: ReactNode }) {
     threshold: number,
     kind: "guarded" | "standard" = "guarded",
     policy?: PolicyV1,
+    settlementAuthority?: string,
   ) {
     const createKey = Keypair.generate();
     let address: string | undefined;
@@ -1013,6 +1078,7 @@ export function SquadProvider({ children }: { children: ReactNode }) {
             creator: key.toBase58(),
             createKey: createKey.publicKey.toBase58(),
             ...(policyHash ? { policyHash } : {}),
+            ...(settlementAuthority ? { settlementAuthority } : {}),
           });
           const response = await fetch("/api/squads/groups", {
             method: "POST",
@@ -1054,9 +1120,32 @@ export function SquadProvider({ children }: { children: ReactNode }) {
             threshold,
             name,
             executor,
+            settlementAuthority: settlementAuthority
+              ? new PublicKey(settlementAuthority)
+              : undefined,
           });
           address = group.multisig.toBase58();
           // multisigCreateV2 then initialize_guard, atomically.
+          if (settlementAuthority) {
+            if (
+              [key.toBase58(), ...members].includes(settlementAuthority) ||
+              guarded.settlementAuthority !== settlementAuthority
+            )
+              throw new Error(
+                "Use a separate back-office authority outside the treasury membership.",
+              );
+            const binding = validateExactInstruction(
+              fromWire(prepared.settlementInstruction),
+              bindingInstruction(
+                new PublicKey(guarded.guardProgram),
+                new PublicKey(multisig),
+                createKey.publicKey,
+                key,
+                new PublicKey(settlementAuthority),
+              ),
+            );
+            return [group.instruction, guardInstruction, binding];
+          }
           return [group.instruction, guardInstruction];
         }
         protectedConfig = {
@@ -1201,6 +1290,7 @@ export function SquadProvider({ children }: { children: ReactNode }) {
         newest: () => setCursor(undefined),
         vote,
         execute,
+        authorizeOrder,
         proposePayment,
         deploymentToken,
         policyRequest,

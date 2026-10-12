@@ -8,6 +8,10 @@ import {
   type WireInstruction,
 } from "./sdk";
 import { parseDeployment } from "./server-config";
+import {
+  bindingInstruction,
+  validateExactInstruction,
+} from "./settlement-orders";
 
 // Server-side helpers for guarded treasuries opened or created through the
 // runner. Runner responses are validated here; upstream text is never echoed.
@@ -20,7 +24,13 @@ export class RunnerRequestError extends Error {
 
 const base58 = (value: unknown) => new PublicKey(value as string).toBase58();
 
-export function parseCreateGroupRequest(input: unknown) {
+export function parseCreateGroupRequest(input: unknown): {
+  multisig: string;
+  creator: string;
+  createKey: string;
+  policyHash?: string;
+  settlementAuthority?: string;
+} {
   if (!input || typeof input !== "object")
     throw new Error("Invalid group request.");
   const record = input as Record<string, unknown>;
@@ -35,13 +45,29 @@ export function parseCreateGroupRequest(input: unknown) {
   )
     throw new Error("The group address does not match its create key.");
   // Optional: the hash of a policy the creator registered for this treasury (else the deployment's).
-  if (record.policyHash === undefined) return { multisig, creator, createKey };
+  const settlementAuthority =
+    record.settlementAuthority === undefined
+      ? undefined
+      : base58(record.settlementAuthority);
+  if (
+    settlementAuthority &&
+    (settlementAuthority === creator ||
+      !PublicKey.isOnCurve(new PublicKey(settlementAuthority).toBytes()))
+  )
+    throw new Error("Use a separate back-office signing wallet.");
+  const base = {
+    multisig,
+    creator,
+    createKey,
+    ...(settlementAuthority ? { settlementAuthority } : {}),
+  };
+  if (record.policyHash === undefined) return base;
   if (
     typeof record.policyHash !== "string" ||
     !/^[0-9a-f]{64}$/.test(record.policyHash)
   )
     throw new Error("Invalid policy hash.");
-  return { multisig, creator, createKey, policyHash: record.policyHash };
+  return { ...base, policyHash: record.policyHash };
 }
 
 // A runner group response for an existing guarded treasury.
@@ -68,9 +94,18 @@ export function parseRunnerGroup(
 // The runner's prepared initialize_guard for a treasury about to be created.
 export function parsePreparedGroup(
   result: unknown,
-  request: { multisig: string; creator: string; createKey: string },
+  request: {
+    multisig: string;
+    creator: string;
+    createKey: string;
+    settlementAuthority?: string;
+  },
   deployment?: { guardProgram?: string; guardArgs?: GuardInitArgs },
-): { config: SquadConfig; guardInstruction: WireInstruction } {
+): {
+  config: SquadConfig;
+  guardInstruction: WireInstruction;
+  settlementInstruction?: WireInstruction;
+} {
   const config = parseRunnerGroup(
     result,
     request.multisig,
@@ -89,10 +124,29 @@ export function parsePreparedGroup(
       args: deployment?.guardArgs,
     },
   );
-  // The guard is not live until the creation transaction lands.
+  const settlementInstruction = request.settlementAuthority
+    ? validateExactInstruction(
+        fromWire(
+          (result as { settlementInstruction: WireInstruction })
+            .settlementInstruction,
+        ),
+        bindingInstruction(
+          new PublicKey(config.guardProgram!),
+          new PublicKey(request.multisig),
+          new PublicKey(request.createKey),
+          new PublicKey(request.creator),
+          new PublicKey(request.settlementAuthority),
+        ),
+      )
+    : undefined;
+  if (config.settlementAuthority !== request.settlementAuthority)
+    throw new Error("Settlement authority mismatch.");
   return {
     config: { ...config, settlementEnabled: false },
     guardInstruction: toWire(guardInstruction),
+    ...(settlementInstruction
+      ? { settlementInstruction: toWire(settlementInstruction) }
+      : {}),
   };
 }
 

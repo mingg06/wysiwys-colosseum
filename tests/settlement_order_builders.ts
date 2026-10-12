@@ -1,0 +1,57 @@
+import { expect } from "chai";
+import * as sqds from "@sqds/multisig";
+import { Keypair, PublicKey, ComputeBudgetProgram } from "@solana/web3.js";
+import { getAccount } from "@solana/spl-token";
+import { createSettlement } from "../services/runner/src/settlement";
+import { encodeAuthorizeSettlementOrder, parseSettlementOrderRequest, settlementOrderPda, settlementOrderId, type SettlementOrderRequest } from "@wysiwys/shared";
+import { testProvider } from "./helpers/provider";
+import { guardProgram, payer, chainNow, requestReview, expectError } from "./helpers/guard";
+import { setupForwardedDesk, approvePayload, deliverReport } from "./helpers/forwarder";
+import { approve, payoutIxs, proposePayout, sendWithFreshBlockhash, usdc } from "./helpers/squads";
+
+describe("runner settlement order builders", () => {
+  testProvider();
+  const program = guardProgram();
+  const connection = program.provider.connection;
+  const authority = Keypair.generate();
+  const settlement = createSettlement({ connection, programId: program.programId });
+  it("creates Squads, Guard and its immutable order binding in one wallet-signed transaction", async () => {
+    const createKey = Keypair.generate(), creator = payer().publicKey;
+    const multisig = sqds.getMultisigPda({ createKey: createKey.publicKey })[0];
+    const configured = createSettlement({ connection, programId: program.programId, guardSetup: { forwarderProgram: Keypair.generate().publicKey.toBase58(), forwarderState: Keypair.generate().publicKey.toBase58(), policyHash: "07".repeat(32), workflowOwner: "11".repeat(20), maxReviewLifetime: "3600", reviewDeadlineSecs: "900" } });
+    const prepared = await configured.prepareGuardedGroup({ multisig: multisig.toBase58(), creator: creator.toBase58(), createKey: createKey.publicKey.toBase58(), settlementAuthority: authority.publicKey.toBase58() });
+    expect(prepared.settlementInstruction).not.to.equal(undefined);
+    const config = await sqds.accounts.ProgramConfig.fromAccountAddress(connection, sqds.getProgramConfigPda({})[0]);
+    const perms = sqds.types.Permissions, role = sqds.types.Permission;
+    const create = sqds.instructions.multisigCreateV2({ treasury: config.treasury, creator, multisigPda: multisig, configAuthority: null, threshold: 1, timeLock: 0, createKey: createKey.publicKey, rentCollector: null, members: [{ key: creator, permissions: perms.fromPermissions([role.Initiate, role.Vote]) }, { key: new PublicKey(prepared.executorPda), permissions: perms.fromPermissions([role.Execute]) }] });
+    await sendWithFreshBlockhash(connection, [create, prepared.instruction, prepared.settlementInstruction!], [payer(), createKey]);
+    expect((await configured.guardedGroup(multisig.toBase58()))!.settlementAuthority).to.equal(authority.publicKey.toBase58());
+  });
+  it("builds the shared authorization bytes, reads chain state and enforces orders through the existing execute endpoint", async () => {
+    const topup = await connection.requestAirdrop(authority.publicKey, 2_000_000_000);
+    await connection.confirmTransaction(topup, "confirmed");
+    const d = await setupForwardedDesk();
+    const binding = await settlement.initializeSettlementBinding({ multisig: d.multisigPda.toBase58(), creator: payer().publicKey.toBase58(), createKey: d.createKey.publicKey.toBase58(), authority: authority.publicKey.toBase58() });
+    await sendWithFreshBlockhash(connection, [binding], [payer(), d.createKey]);
+    expect((await settlement.guardedGroup(d.multisigPda.toBase58()))!.settlementAuthority).to.equal(authority.publicKey.toBase58());
+    const request: SettlementOrderRequest = { authority: authority.publicKey.toBase58(), externalId: "BUILDER-ONE", allowedVaults: [d.vaultPda.toBase58()], actionKind: 2, destination: d.counterpartyAta.toBase58(), recipient: d.counterparty.publicKey.toBase58(), mint: d.mint.toBase58(), amount: usdc(1).toString(), decimals: 6, expiresAt: ((await chainNow(connection)) + 600n).toString() };
+    const ix = await settlement.authorizeSettlementOrder(request);
+    expect(Array.from(ix.data)).to.deep.equal(Array.from(encodeAuthorizeSettlementOrder(parseSettlementOrderRequest(request).terms)));
+    expect(ix.keys.filter(k => k.isSigner).every(k => k.pubkey.equals(authority.publicKey))).to.equal(true);
+    await sendWithFreshBlockhash(connection, [ix], [authority]);
+    const address = settlementOrderPda(program.programId, authority.publicKey, settlementOrderId(request.externalId));
+    expect((await settlement.settlementOrder(authority.publicKey.toBase58(), Buffer.from(settlementOrderId(request.externalId)).toString("hex")))!.consumed).to.equal(false);
+    const p = await proposePayout(connection, d, payoutIxs(d, d.counterpartyAta, usdc(1)));
+    const { review } = await requestReview(d, p);
+    await deliverReport(d, review, await approvePayload(d, review));
+    await approve(connection, d, p.transactionIndex);
+    const ids = { multisig: d.multisigPda.toBase58(), txIndex: p.transactionIndex.toString(), member: d.members[0].publicKey.toBase58() };
+    await expectError(settlement.guardedExecute(ids), "order ID is required");
+    const execute = await settlement.guardedExecute({ ...ids, orderExternalId: request.externalId });
+    expect(execute.keys.some(k => k.pubkey.equals(address) && k.isWritable && !k.isSigner)).to.equal(true);
+    const before = (await getAccount(connection, d.counterpartyAta)).amount;
+    await sendWithFreshBlockhash(connection, [ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }), execute], [payer()]);
+    expect((await getAccount(connection, d.counterpartyAta)).amount - before).to.equal(usdc(1));
+    expect((await settlement.settlementOrder(authority.publicKey.toBase58(), Buffer.from(settlementOrderId(request.externalId)).toString("hex")))!.consumed).to.equal(true);
+  });
+});

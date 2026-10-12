@@ -13,6 +13,7 @@ import {
   buildGroupCreation,
   encodeInitializeGuardArgs,
   GUARDED_GROUP_MAX_INVITES,
+  SETTLEMENT_GROUP_MAX_INVITES,
   validateInitializeGuard,
   type GuardInitArgs,
 } from "../src/lib/squads/groups";
@@ -26,6 +27,7 @@ import {
   parsePreparedGroup,
   parseRunnerGroup,
 } from "../src/lib/squads/guard-groups";
+import { bindingInstruction } from "../src/lib/squads/settlement-orders";
 
 const guardProgram = Keypair.generate().publicKey;
 const creator = Keypair.generate().publicKey;
@@ -264,6 +266,69 @@ test("a guarded treasury with the maximum members is created in one transaction"
   );
 });
 
+test("an order-enabled treasury with the maximum supported members fits in one atomic creation", () => {
+  const authority = Keypair.generate().publicKey;
+  const members = Array.from({ length: SETTLEMENT_GROUP_MAX_INVITES }, () =>
+    Keypair.generate().publicKey.toBase58(),
+  );
+  const group = buildGroupCreation({
+    creator,
+    createKey,
+    treasury: Keypair.generate().publicKey,
+    members,
+    threshold: members.length + 1,
+    name: "x".repeat(80),
+    executor,
+    settlementAuthority: authority,
+  });
+  const binding = bindingInstruction(
+    guardProgram,
+    multisig,
+    createKey,
+    creator,
+    authority,
+  );
+  const message = new TransactionMessage({
+    payerKey: creator,
+    recentBlockhash: Keypair.generate().publicKey.toBase58(),
+    instructions: withComputeBudget([
+      group.instruction,
+      initializeGuard(),
+      binding,
+    ]),
+  }).compileToV0Message();
+  assert.ok(new VersionedTransaction(message).serialize().length <= 1232);
+  const request = parseCreateGroupRequest({
+    multisig: multisig.toBase58(),
+    creator: creator.toBase58(),
+    createKey: createKey.toBase58(),
+    settlementAuthority: authority.toBase58(),
+  });
+  const result = {
+    multisig: request.multisig,
+    programId: guardProgram.toBase58(),
+    executorPda: executor.toBase58(),
+    vaultIndex: 0,
+    guardReady: false,
+    settlementAuthority: request.settlementAuthority,
+    guardInstruction: toWire(initializeGuard()),
+    settlementInstruction: toWire(binding),
+  };
+  assert.equal(
+    parsePreparedGroup(result, request, {
+      guardProgram: guardProgram.toBase58(),
+      guardArgs: args,
+    }).config.settlementAuthority,
+    request.settlementAuthority,
+  );
+  assert.throws(() =>
+    parsePreparedGroup(
+      { ...result, settlementInstruction: toWire(initializeGuard()) },
+      request,
+    ),
+  );
+});
+
 test("runner group responses carry the guard program, executor and nested token", () => {
   const mint = Keypair.generate().publicKey.toBase58();
   const parsed = parseDeployment(
@@ -399,14 +464,35 @@ test("deployment guard args are parsed strictly", () => {
 });
 
 test("a creator-chosen policy: the request carries its hash and initialize_guard must commit to exactly it", () => {
-  const request = { multisig: multisig.toBase58(), creator: creator.toBase58(), createKey: createKey.toBase58() };
+  const request = {
+    multisig: multisig.toBase58(),
+    creator: creator.toBase58(),
+    createKey: createKey.toBase58(),
+  };
   const chosen = "ef".repeat(32);
-  assert.deepEqual(parseCreateGroupRequest({ ...request, policyHash: chosen }), { ...request, policyHash: chosen });
+  assert.deepEqual(
+    parseCreateGroupRequest({ ...request, policyHash: chosen }),
+    { ...request, policyHash: chosen },
+  );
   for (const policyHash of ["EF".repeat(32), "ef".repeat(31), 5])
     assert.throws(() => parseCreateGroupRequest({ ...request, policyHash }));
 
-  const ix = initializeGuard({ data: encodeInitializeGuardArgs({ ...args, policyHash: chosen }) });
+  const ix = initializeGuard({
+    data: encodeInitializeGuardArgs({ ...args, policyHash: chosen }),
+  });
   assert.ok(validateInitializeGuard(ix, { ...expected, policyHash: chosen }));
-  assert.ok(validateInitializeGuard(ix, { ...expected, args: { ...args, policyHash: chosen } }));
-  assert.throws(() => validateInitializeGuard(initializeGuard(), { ...expected, policyHash: chosen }), /policy/i);
+  assert.ok(
+    validateInitializeGuard(ix, {
+      ...expected,
+      args: { ...args, policyHash: chosen },
+    }),
+  );
+  assert.throws(
+    () =>
+      validateInitializeGuard(initializeGuard(), {
+        ...expected,
+        policyHash: chosen,
+      }),
+    /policy/i,
+  );
 });

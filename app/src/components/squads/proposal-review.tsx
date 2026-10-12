@@ -8,6 +8,7 @@ import { CopyButton } from "@/components/dialogs";
 import { paymentFields } from "@/lib/squads/review-presentation";
 import { useWalletConnection } from "@/lib/auth/provider";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Panel,
   PageHeader,
@@ -83,6 +84,7 @@ export function LiveProposal({ id }: { id: string }) {
   const { names } = useMemberNames(config?.multisig);
   const [record, setRecord] = useState<ProposalRecord | null>();
   const [readError, setReadError] = useState("");
+  const [orderExternalId, setOrderExternalId] = useState("");
   const [decoded, setDecoded] = useState<PaymentPreview>();
   // On-chain guard Review: undefined = not loaded or unreadable, null = none.
   const [review, setReview] = useState<Review | null>();
@@ -922,6 +924,24 @@ export function LiveProposal({ id }: { id: string }) {
                           ? "Membership changes are checked on-chain by the guard: voters only, no spending limits."
                           : "This transaction type cannot be executed through the guard."}
                 </p>
+                {config?.settlementAuthority && record.kind === "vault" && (
+                  <label className="block space-y-2 text-sm">
+                    <span>Authorized settlement order ID</span>
+                    <Input
+                      value={orderExternalId}
+                      maxLength={128}
+                      onChange={(e) => setOrderExternalId(e.target.value)}
+                      placeholder="Exact business obligation ID"
+                    />
+                    <p className="caption">
+                      The Guard checks the stored payment against this
+                      authority's order and consumes it with payment.{" "}
+                      <Link href="/settlement-orders" className="underline">
+                        Check order state
+                      </Link>
+                    </p>
+                  </label>
+                )}
                 {(standard ||
                   record.kind === "vault" ||
                   record.kind === "config") && (
@@ -929,13 +949,22 @@ export function LiveProposal({ id }: { id: string }) {
                     disabled={
                       !enabled ||
                       !supported ||
+                      (record.kind === "vault" &&
+                        !!config?.settlementAuthority &&
+                        !orderExternalId) ||
                       (standard
                         ? !!executionIssue
                         : !config?.settlementEnabled ||
                           record.proposal.status.__kind !== "Approved" ||
                           !(guardedConfig ? configGate.enabled : gate.enabled))
                     }
-                    onClick={() => void execute(BigInt(id), lines)}
+                    onClick={() =>
+                      void execute(
+                        BigInt(id),
+                        lines,
+                        orderExternalId || undefined,
+                      )
+                    }
                   >
                     {standard
                       ? record.kind === "config"

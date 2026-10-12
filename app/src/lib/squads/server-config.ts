@@ -1,5 +1,4 @@
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { PublicKey, clusterApiUrl } from "@solana/web3.js";
 import type { SquadConfig } from "./sdk";
 import type { GuardInitArgs } from "./groups";
@@ -35,6 +34,14 @@ export function parseDeployment(
       "Guard executor must be a program-derived address, not a wallet.",
     );
   const vaultIndex = record.vaultIndex ?? 0;
+  const settlementAuthority = record.settlementAuthority;
+  if (
+    settlementAuthority !== undefined &&
+    (typeof settlementAuthority !== "string" ||
+      !PublicKey.isOnCurve(new PublicKey(settlementAuthority).toBytes()) ||
+      new PublicKey(settlementAuthority).equals(PublicKey.default))
+  )
+    throw new Error("Invalid settlement authority.");
   if (
     typeof vaultIndex !== "number" ||
     !Number.isInteger(vaultIndex) ||
@@ -46,6 +53,9 @@ export function parseDeployment(
     ...addresses,
     vaultIndex,
     settlementEnabled,
+    ...(settlementAuthority
+      ? { settlementAuthority: settlementAuthority as string }
+      : {}),
     executionMode: "guarded",
     ...(record.mint === undefined &&
     (record.token as Record<string, unknown> | undefined)?.mint === undefined
@@ -109,16 +119,16 @@ export function parseGuardArgs(input: unknown): GuardInitArgs | undefined {
 }
 async function readDeployment(): Promise<unknown | null> {
   const configuredPath = process.env.WYSIWYS_DEPLOYMENT_PATH;
+  // Static import is bundled by Next.js for Vercel functions, independent of runtime cwd.
+  if (!configuredPath)
+    return (await import("../../../../deployments/devnet.json")).default;
   let contents: string;
   try {
     contents = await readFile(
-      /* turbopackIgnore: true */ configuredPath ||
-        path.resolve(process.cwd(), "../deployments/devnet.json"),
+      /* turbopackIgnore: true */ configuredPath,
       "utf8",
     );
-  } catch (error) {
-    if (!configuredPath && (error as NodeJS.ErrnoException).code === "ENOENT")
-      return null;
+  } catch {
     throw new Error("Deployment configuration could not be loaded.");
   }
   return JSON.parse(contents);
@@ -159,9 +169,21 @@ export function isPrepareRequest(input: unknown): input is {
   action: PrepareAction;
   index: string;
   member: unknown;
+  orderExternalId?: string;
 } {
   if (!input || typeof input !== "object") return false;
-  const { action, index, multisig } = input as Record<string, unknown>;
+  const { action, index, multisig, orderExternalId } = input as Record<
+    string,
+    unknown
+  >;
+  if (
+    orderExternalId !== undefined &&
+    (action !== "execute" ||
+      typeof orderExternalId !== "string" ||
+      !orderExternalId.length ||
+      orderExternalId.length > 128)
+  )
+    return false;
   try {
     // The open treasury, bound into the wallet-signed request body.
     if (

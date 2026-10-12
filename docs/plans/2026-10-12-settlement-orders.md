@@ -24,4 +24,6 @@ Phase 1 is committed as `f714b64`. Phase 2 passed 70 Rust unit tests, an Anchor 
 
 Phase 3 includes Vercel for the frontend and existing Next.js API routes, plus one continuously running Railway runner/listener/CRE service with persistent SQLite. The existing browser-to-Next-to-runner flow remains intact. See `deploy/README.md` for the deployment configuration and account prerequisites.
 
+The runner/app order integration is implemented. Checks passed: 41 shared tests, 108 runner tests, 154 app unit tests, 20 browser tests, workspace typechecks, production Next.js build and manifest smoke test, and 16 targeted local-validator builder checks. The creation-size check bounds order-enabled treasuries to eight invited members; legacy creation retains its existing bound. Railway container/runtime verification is tracked with the hosting phase.
+
 No successful devnet deployment, live DON consensus, confidential attestation or institutional adoption is claimed by this implementation.

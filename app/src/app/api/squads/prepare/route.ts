@@ -52,6 +52,9 @@ export async function POST(request: Request) {
           multisig: config.multisig,
           txIndex: input.index,
           member: member.toBase58(),
+          ...(input.orderExternalId !== undefined
+            ? { orderExternalId: input.orderExternalId }
+            : {}),
         }),
       })) as { guardInstruction?: unknown };
     } catch {

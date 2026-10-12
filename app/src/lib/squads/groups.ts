@@ -10,6 +10,8 @@ import {
 
 // multisigCreateV2, initialize_guard and the compute budget share one transaction (1232 bytes).
 export const GUARDED_GROUP_MAX_INVITES = 10;
+// The immutable settlement binding adds two keys and another instruction.
+export const SETTLEMENT_GROUP_MAX_INVITES = 8;
 
 const permissions = () =>
   sqds.types.Permissions.fromPermissions([
@@ -24,6 +26,7 @@ export function buildGroupCreation({
   threshold,
   name,
   executor,
+  settlementAuthority,
 }: {
   creator: PublicKey;
   createKey: PublicKey;
@@ -32,15 +35,29 @@ export function buildGroupCreation({
   threshold: number;
   name: string;
   executor?: PublicKey;
+  settlementAuthority?: PublicKey;
 }) {
   if (!name.trim() || name.trim().length > 80)
     throw new Error("Enter a group name of up to 80 characters.");
-  const maxInvites = executor ? GUARDED_GROUP_MAX_INVITES : 19;
+  const maxInvites = settlementAuthority
+    ? SETTLEMENT_GROUP_MAX_INVITES
+    : executor
+      ? GUARDED_GROUP_MAX_INVITES
+      : 19;
   if (members.length > maxInvites)
     throw new Error(
       `Invite up to ${maxInvites} members when creating a group.`,
     );
   const keys = [creator, ...members.map((address) => new PublicKey(address))];
+  if (
+    settlementAuthority &&
+    (!executor ||
+      !PublicKey.isOnCurve(settlementAuthority.toBytes()) ||
+      keys.some((k) => k.equals(settlementAuthority)))
+  )
+    throw new Error(
+      "Use a separate back-office authority outside the treasury membership.",
+    );
   if (keys.some((key) => !PublicKey.isOnCurve(key.toBytes())))
     throw new Error("Members must be Solana wallet addresses.");
   if (new Set(keys.map((key) => key.toBase58())).size !== keys.length)

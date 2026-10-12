@@ -174,6 +174,11 @@ export function createStatusServer(d: Deps): Server {
     }
 
     const groups = url.pathname.match(/^\/frontend\/groups\/([^/]+)$/);
+    const order = url.pathname.match(/^\/frontend\/orders\/([^/]+)\/([0-9a-f]{64})$/);
+    if (req.method === "GET" && order) {
+      const result = await s.settlementOrder(order[1]!, order[2]!);
+      return result ? [200, result] : [404, { error: "order not found" }];
+    }
     if (req.method === "GET" && groups && groups[1] !== "prepare") {
       const group = await s.guardedGroup(decodeURIComponent(groups[1]));
       return group ? [200, group] : [404, { error: "not a guarded group" }];
@@ -186,11 +191,12 @@ export function createStatusServer(d: Deps): Server {
         if (typeof body.policyHash !== "string" || !/^[0-9a-f]{64}$/.test(body.policyHash)) throw new HttpError(400, "invalid policy hash");
         if (!d.store.getPolicyDocument(body.policyHash)) throw new HttpError(409, "policy document is not stored; register it first");
       }
-      const { instruction, ...group } = await s.prepareGuardedGroup(body);
-      return [200, { ...group, guardInstruction: toWire(instruction) }];
+      const { instruction, settlementInstruction, ...group } = await s.prepareGuardedGroup(body);
+      return [200, { ...group, guardInstruction: toWire(instruction), ...(settlementInstruction ? { settlementInstruction: toWire(settlementInstruction) } : {}) }];
     }
     if (url.pathname === "/frontend/propose") return [200, { guardInstruction: toWire(await s.requestReview(await readJson(req))) }];
     if (url.pathname === "/frontend/execute") return [200, { guardInstruction: toWire(await s.guardedExecute(await readJson(req))) }];
+    if (url.pathname === "/frontend/orders/authorize") return [200, { orderInstruction: toWire(await s.authorizeSettlementOrder(await readJson(req))) }];
     if (url.pathname === "/frontend/config-execute") {
       return [200, { guardInstruction: toWire(await s.guardedConfigExecute(await readJson(req))) }];
     }

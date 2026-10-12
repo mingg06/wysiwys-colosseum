@@ -179,8 +179,14 @@
 }
 @media (max-height: 800px) {
   .workspace-sidebar {
-    gap: 8px;
-    padding: 16px;
+    gap: 6px;
+    padding: 12px;
+  }
+  .workspace-sidebar .brand-logo {
+    height: 40px;
+  }
+  .workspace-sidebar-footer > :first-child {
+    padding: 12px;
   }
   .workspace-sidebar nav a {
     height: 44px;

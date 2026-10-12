@@ -17,6 +17,7 @@ export type SquadConfig = {
   executor?: string;
   vaultIndex: number;
   settlementEnabled: boolean;
+  settlementAuthority?: string;
   executionMode?: "standard" | "guarded";
   // Public display metadata for the deployment mint (e.g. mUSD).
   token?: { mint: string; symbol: string; decimals: number };
@@ -403,7 +404,11 @@ export function withComputeBudget(instructions: TransactionInstruction[]) {
   return [
     ...(has(SET_COMPUTE_UNIT_LIMIT)
       ? []
-      : [ComputeBudgetProgram.setComputeUnitLimit({ units: COMPUTE_UNIT_LIMIT })]),
+      : [
+          ComputeBudgetProgram.setComputeUnitLimit({
+            units: COMPUTE_UNIT_LIMIT,
+          }),
+        ]),
     ...(has(SET_COMPUTE_UNIT_PRICE)
       ? []
       : [
@@ -420,20 +425,27 @@ export function withComputeBudget(instructions: TransactionInstruction[]) {
  * instructions. Same fee payer, same blockhash, and every other instruction identical and in
  * the same order (program, accounts with signer/writable flags, data). Anything else throws.
  */
-export function assertSameIntent(built: VersionedMessage, signed: VersionedMessage) {
-  if (Buffer.from(built.serialize()).equals(Buffer.from(signed.serialize()))) return;
+export function assertSameIntent(
+  built: VersionedMessage,
+  signed: VersionedMessage,
+) {
+  if (Buffer.from(built.serialize()).equals(Buffer.from(signed.serialize())))
+    return;
   const changed = () => new Error("Wallet changed the transaction message.");
   let a: TransactionMessage, b: TransactionMessage;
   try {
     // Lookup tables are never used by this app; a wallet adding one is a change.
-    if (signed.addressTableLookups.length || built.addressTableLookups.length) throw changed();
+    if (signed.addressTableLookups.length || built.addressTableLookups.length)
+      throw changed();
     a = TransactionMessage.decompile(built);
     b = TransactionMessage.decompile(signed);
   } catch {
     throw changed();
   }
-  if (!a.payerKey.equals(b.payerKey) || a.recentBlockhash !== b.recentBlockhash) throw changed();
-  const work = (m: TransactionMessage) => m.instructions.filter((ix) => !isComputeBudget(ix));
+  if (!a.payerKey.equals(b.payerKey) || a.recentBlockhash !== b.recentBlockhash)
+    throw changed();
+  const work = (m: TransactionMessage) =>
+    m.instructions.filter((ix) => !isComputeBudget(ix));
   const x = work(a);
   const y = work(b);
   const same = (p: TransactionInstruction, q: TransactionInstruction) =>
@@ -446,7 +458,8 @@ export function assertSameIntent(built: VersionedMessage, signed: VersionedMessa
         k.isSigner === q.keys[i].isSigner &&
         k.isWritable === q.keys[i].isWritable,
     );
-  if (x.length !== y.length || !x.every((ix, i) => same(ix, y[i]))) throw changed();
+  if (x.length !== y.length || !x.every((ix, i) => same(ix, y[i])))
+    throw changed();
 }
 
 export async function signAndConfirm(

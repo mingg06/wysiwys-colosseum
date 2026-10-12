@@ -2,6 +2,10 @@
 
 What You See Is What You Sign: a treasury payment firewall for Solana. A Squads v4 payment executes only with human approval AND a matching, current, unexpired, unused Guard review from a Chainlink CRE workflow. Design: `docs/plans/architecture.md`.
 
+The Colosseum addition is **one business obligation, one settlement across approved vaults**. New treasuries may require immutable, independently authorized settlement orders. The Guard matches the stored payment's source vault, recipient, token, exact integer amount and deadline, then consumes the shared order atomically with payment. A mismatch fails even when all humans and the policy review approve. See the [project and demo README](docs/colosseum/README.md).
+
+Hosting: [Vercel frontend and APIs, Railway continuous runner](deploy/README.md). Devnet, test keys only. Deployment configuration is prepared; local checks do not establish a hosted deployment or live confidential execution.
+
 ## Security (guard program)
 
 The guard (`programs/wysiwys_guard`) holds the only Execute permission on the treasury's Squads v4 multisig. A payment runs only through `guarded_execute`, after a Chainlink CRE report approved that exact vault transaction and its destination, and only while that destination is unchanged.
@@ -10,7 +14,7 @@ The guard (`programs/wysiwys_guard`) holds the only Execute permission on the tr
 |---|---|---|
 | 1 | CPI target is exactly Squads `SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf` (`InvalidSquadsProgram`) | `tests/guarded_execute.ts` |
 | 2 | The executor PDA signs only the Squads `vault_transaction_execute` and `config_transaction_execute` CPIs (one `invoke_signed` in each execute handler) and may not appear in the vault transaction, so its signature cannot reach inner instructions (`ExecutorInMessage`) | `tests/structure.ts`, `tests/guarded_execute.ts` |
-| 3 | `GuardConfig` is immutable: the program exposes only `initialize_guard`, `request_review`, `on_report`, `guarded_execute`, `guarded_config_execute` | `tests/structure.ts` |
+| 3 | Existing GuardConfig fields remain frozen except voted policy changes through `apply_policy_change`; separate opt-in settlement accounts use `initialize_settlement_binding` and `authorize_settlement_order` | `tests/structure.ts`, `tests/settlement_orders.ts` |
 | 4 | Instructions sysvar address checked before the durable-nonce check (`InvalidInstructionsSysvar`, `DurableNonceDetected`) | `tests/guarded_execute.ts` |
 | 5 | Owner, discriminator and seed checks on every account; `has_one = multisig` (`NotSquadsAccount`, `WrongMultisig`, `WrongTxIndex`) | `tests/request_review.ts`, `tests/guarded_execute.ts` |
 | 6 | Review bound to its vault transaction and proposal; `tx_hash = sha256("wysiwys:tx:v1" \|\| vault_transaction \|\| data)` computed on-chain at review and recomputed at execute (`ReviewMismatch`, `HashMismatch`) | `tests/request_review.ts`, `tests/guarded_execute.ts`, `programs/wysiwys_guard/src/logic.rs` |

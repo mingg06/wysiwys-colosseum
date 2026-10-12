@@ -17,6 +17,7 @@ import { useWalletConnection } from "@/lib/auth/provider";
 import { PublicKey } from "@solana/web3.js";
 import {
   GUARDED_GROUP_MAX_INVITES,
+  SETTLEMENT_GROUP_MAX_INVITES,
   MEMBER_PERMISSION_CHOICES,
   membershipChangeNote,
   planMemberEdit,
@@ -62,6 +63,7 @@ export function CreateGroupButton({
   // Empty means "every member must approve" (the default).
   const [threshold, setThreshold] = useState("");
   const [standard, setStandard] = useState(false);
+  const [settlementAuthority, setSettlementAuthority] = useState("");
   // Payment policy: the deployment's demo policy, or the treasury's own (whitelist, cap, screening).
   const [ownPolicy, setOwnPolicy] = useState(false);
   // The own-policy fields open a second panel on the right (stacked on small screens).
@@ -102,7 +104,11 @@ export function CreateGroupButton({
   const invitees = checked.invitees;
   const count = invitees.length + 1;
   const required = threshold || String(count);
-  const maxInvites = standard ? 19 : GUARDED_GROUP_MAX_INVITES;
+  const maxInvites = standard
+    ? 19
+    : settlementAuthority
+      ? SETTLEMENT_GROUP_MAX_INVITES
+      : GUARDED_GROUP_MAX_INVITES;
   return (
     <Dialog
       open={open}
@@ -136,6 +142,9 @@ export function CreateGroupButton({
               Number(required),
               standard ? "standard" : "guarded",
               policyDraft.policy,
+              !standard && settlementAuthority
+                ? settlementAuthority.trim()
+                : undefined,
             );
             if (address) {
               setOpen(false);
@@ -149,6 +158,22 @@ export function CreateGroupButton({
             }
           >
             <div className="space-y-4">
+              {!standard && (
+                <label className="block space-y-2">
+                  <span>Back-office authority (optional)</span>
+                  <Input
+                    value={settlementAuthority}
+                    onChange={(e) => setSettlementAuthority(e.target.value)}
+                    placeholder="Separate signing wallet address"
+                    spellCheck={false}
+                  />
+                  <p className="caption">
+                    Requires an exact, unused settlement order for every
+                    payment. Set once at creation. This wallet must be outside
+                    the treasury membership.
+                  </p>
+                </label>
+              )}
               <label className="block space-y-2">
                 <span>Treasury name</span>
                 <Input
