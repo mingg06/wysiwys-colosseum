@@ -4,7 +4,7 @@ What You See Is What You Sign: a treasury payment firewall for Solana. A Squads 
 
 The Colosseum addition is **one business obligation, one settlement across approved vaults**. New treasuries may require immutable, independently authorized settlement orders. The Guard matches the stored payment's source vault, recipient, token, exact integer amount and deadline, then consumes the shared order atomically with payment. A mismatch fails even when all humans and the policy review approve. See the [project and demo README](docs/colosseum/README.md).
 
-Hosting: [Vercel frontend and APIs, Railway continuous runner](deploy/README.md). Devnet, test keys only. Deployment configuration is prepared; local checks do not establish a hosted deployment or live confidential execution.
+Hosting: [Vercel frontend and APIs, Railway continuous runner](deploy/README.md). Devnet, test keys only. The [frontend](https://wysiwys-colosseum.vercel.app) is deployed; the Railway backend and fresh Guard deployment are pending trial verification, credentials and devnet funding. See [deployment status](deploy/STATUS.md). The full payment demo is not ready, and no new live confidential execution is claimed.
 
 ## Security (guard program)
 

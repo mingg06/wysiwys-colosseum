@@ -14,6 +14,8 @@ Order enforcement is enabled at creation of a new treasury. The authority and or
 
 ## Judge demo
 
+Without Chainlink account access, use the [mock demo recording guide](MOCK-DEMO.md). It uses the existing local-validator tests and a mock review forwarder, with clear trust labels.
+
 1. Authorize an order for 100 units to an approved recipient, payable from vault A or B.
 2. Propose 101 units from A. Obtain policy approval and every human vote. Execution fails because the exact amount differs.
 3. Propose 100 units from both vaults under the same order. Approve both. Only one payment succeeds; the shared order is consumed.

@@ -12,15 +12,17 @@ The browser calls the existing Next.js API routes on Vercel. Those server routes
 
 ## Railway setup
 
-1. Create **one service** from this repository. Keep its root directory at the repository root. Set its configuration-file path to `deploy/railway/railway.json`. The manifest selects `deploy/railway/Dockerfile`.
-2. Attach one persistent volume at **`/data`**. Set `RUNNER_DB_PATH=/data/runner.db`. The manifest requires this mount; it does not create the volume for you. SQLite also stores policy documents and the listener cursor. Preserve and back up the volume across redeploys.
-3. Keep one replica. Ensure **Serverless / sleeping is disabled** in service settings. The manifest sets `sleepApplication=false`. The listener needs continuous outbound subscriptions and minute-by-minute backfill; an HTTP request cannot replace it. [Serverless behavior](https://docs.railway.com/deployments/serverless).
+1. Create **one empty service** named `runner` at the repository root. Set its Dockerfile path to `deploy/railway/Dockerfile`. Leave the Railway Config File setting unset: new services reject the deprecated `railway.json` mechanism. Use [the current infrastructure specification](../.railway/railway.ts), or configure the same settings through Railway MCP. See [Railway Infrastructure as Code](https://docs.railway.com/infrastructure-as-code).
+2. Attach one 500 MB persistent volume named `runner-data` at **`/data`**. Set `RUNNER_DB_PATH=/data/runner.db`. SQLite also stores policy documents and the listener cursor. Preserve and back up the volume across redeploys.
+3. Keep one replica. Ensure **Serverless / sleeping is disabled** in service settings. The specification sets `sleepApplication=false`. The listener needs continuous outbound subscriptions and minute-by-minute backfill; an HTTP request cannot replace it. [Serverless behavior](https://docs.railway.com/deployments/serverless).
 4. Set the variables from [Railway template](railway/.env.example) in Railway's Variables panel. Set `PORT=8787` for the packaged simulator's local policy-store URL and make the domain target that port. Generate independent random tokens, for example `openssl rand -hex 32`. Do not copy example placeholders into a live service.
 5. Generate a Railway HTTPS domain and note its URL. Use it on Vercel as described below. Keep the backend endpoints bearer-protected; no browser RPC or CRE credentials are needed.
 6. Deploy and open `https://YOUR_RUNNER_DOMAIN/status`. A healthy listener returns HTTP 200; unsubscribed or stale backfill returns 503. Check both HTTPS RPC and WSS subscription connectivity from the deployed service. A container build succeeding does not establish Full Trial network access.
 7. In a Railway service shell, run `node deploy/railway/check-connectivity.mjs` (or `railway ssh -- node deploy/railway/check-connectivity.mjs` from a linked local project). This checks each configured RPC's devnet genesis hash and an acknowledged finalized `logsSubscribe`, without printing credential-bearing URLs. Live mode also checks gateway HTTP reachability. Then propose one test payment and confirm that CRE actually writes its review on chain. Gateway HTTP reachability alone does not prove authorization, DON execution or simulation API access.
 
 The default image includes pinned CRE CLI 1.35.0 with its SHA-256 check, Bun 1.3.5, workflow files and installed SDK dependencies. The entrypoint writes a gitignored, mode-600 CRE `.env` at runtime from Railway variables. Secrets are excluded from Docker build context. It normalizes the policy document to one-line JSON and rejects ambiguous newline or quote encodings without logging secret values.
+
+For CLI-based infrastructure management, install the isolated SDK with `npm ci --prefix .railway`, authenticate the Railway CLI and link the intended project/environment. Provision the selected path's secrets directly in Railway first; the specification uses `preserve()` and does not generate or read back credentials. Run `railway config plan`, review for unintended deletions, then `railway config apply`. Omit or retain optional variables to match the chosen path before applying. Attach the GitHub source separately and pin it to the tested commit. The file deliberately does not change an existing source pin. These commands require CLI authentication separately from the MCP connection.
 
 For simulation, set `CRE_PROJECT_DIR=/opt/wysiwys/workflow/confidential-preflight`, `CRE_TARGET=staging-settings` and `CRE_BROADCAST=true`, and supply `CRE_API_KEY`, all three `CRE_*_SOLANA_DEVNET_RPC_URL` variables, a funded devnet `CRE_SOLANA_PRIVATE_KEY`, a throwaway `CRE_ETH_PRIVATE_KEY` and the matching `CRE_POLICY_DOCUMENT`. Screening additionally needs its provider key when enabled. `POLICY_FETCH_TOKEN` and `CRE_POLICY_STORE_TOKEN` must match if using the policy store. The runner seeds the initial policy into SQLite; member-proposed policies are stored there too. The workflow's `config.staging.json` policy-store URL is `http://127.0.0.1:8787`; set `PORT=8787` on this one-service simulation setup so dynamic policy lookup reaches the local runner. Map the Railway public domain's target port to 8787. Alternatively update that workflow configuration to match a different chosen port.
 
@@ -56,6 +58,8 @@ Monitor Railway's measured memory, CPU, egress and volume usage after one comple
 ## Local checks
 
 ```bash
+npm ci --prefix .railway
+node --import tsx --test .railway/config.test.mjs
 node --test deploy/railway/*.test.mjs
 docker build -f deploy/railway/Dockerfile -t wysiwys-runner:devnet .
 docker run --rm --entrypoint sh wysiwys-runner:devnet -c 'cre version && bun --version && cd workflow/confidential-preflight/review && bun test'

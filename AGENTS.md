@@ -225,8 +225,9 @@ Record each scenario as soon as it works.
 ## Deployment
 
 - Solana: devnet only. Program ID fixed in hour 1; redeploys are upgrades. Upgrade authority stays with the deployer key during the event.
-- Web app and runner: one EC2 `t3.small` in `ap-southeast-1` (`deploy/ec2/`: setup script, systemd units, Caddyfile, env templates). Amplify/Vercel optional for the app.
-- Event adapter + CRE runner + SQLite: one EC2 `t3.small` with Elastic IP, Caddy for HTTPS, systemd services.
+- Colosseum hosting: Vercel for Next.js and its server API routes; one continuously running Railway service for the runner, finalized listener and CRE triggering, with SQLite mounted at `/data`. Sleeping must stay disabled. Current infrastructure configuration is `.railway/railway.ts`; do not set a deprecated `railway.json` config-file path on a new service.
+- On 13 October the user authorized a fresh devnet Guard and new demo treasuries if the old upgrade key cannot be recovered. Keep source, IDL, workflow configuration and deployment manifest consistent with the verified chain deployment. Planned addresses are not deployed addresses. See `deploy/STATUS.md` for current prerequisites.
+- `deploy/ec2/` is historical. The EC2 instance is gone; do not rely on its policy-store URL, key files or service configuration.
 - AWS CLI: `export AWS_PROFILE=origins`. Never use Learner Lab credentials. Budget alerts at $20 and $50.
 - Milestones: first devnet deploy 6 Oct 22:00; integration 7 Oct 12:00; **feature freeze 7 Oct 18:00**; submit by 22:00. No redeploys after recording unless something is broken. Keep everything running through 8 Oct.
 

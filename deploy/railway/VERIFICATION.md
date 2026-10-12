@@ -15,4 +15,6 @@ Verified on 13 October 2026. These are local checks, not a hosted deployment or 
 
 Commands are documented in [the setup guide](../README.md#local-checks). The smoke helper creates and removes its own uniquely named container and volume. Secret parsing tests check that malformed private policy JSON cannot leak values in errors. Connectivity tests cover devnet network validation and finalized subscription acknowledgement using local fixtures.
 
-Not yet verified: Railway Full Trial status and real outbound RPC/CRE connectivity, simulation peak memory under the trial's RAM limit, hosted Vercel routes, an upgraded devnet Guard, or a real hosted order mismatch/shared-order race. These require account access, configured server-only credentials and deployment transactions. No public demo URL is claimed.
+Vercel was subsequently deployed and its public homepage and manifest API passed HTTP checks. See [current deployment status](../STATUS.md) for exact identifiers and pending work.
+
+Not yet verified: Railway Full Trial status and real outbound RPC/CRE connectivity, simulation peak memory under the trial's RAM limit, a fresh devnet Guard, or a real hosted order mismatch/shared-order race. These require configured server-only credentials and deployment transactions. The full payment demo is not ready.

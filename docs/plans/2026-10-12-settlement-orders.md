@@ -1,6 +1,6 @@
 # Settlement orders
 
-Status: implementation and local verification complete; hosted devnet deployment pending account access. Authorized by the user on 12 October 2026, including an explicit set of eligible source vaults and commits after passing checks.
+Status: implementation and local verification complete; Vercel frontend deployed, Railway staged, fresh devnet Guard pending funding. Authorized by the user on 12 October 2026, including an explicit set of eligible source vaults and commits after passing checks. On 13 October the user authorized connecting MCP and deploying, including a fresh Guard if the original upgrade key is unavailable.
 
 ## Contract
 
@@ -30,3 +30,5 @@ Phase 3 is committed as `6028983`. Checks passed: 41 shared tests, 108 runner te
 Phase 4 passed the Docker image build, three runtime/connectivity tests, 82 workflow tests inside the image and a container smoke check for finalized subscription, listener health, bearer rejection and SQLite cursor persistence across restart. Idle container memory was approximately 127 MiB; CRE compilation peak memory has not been measured. See `deploy/railway/VERIFICATION.md`. Vercel/Railway project access, Full Trial account verification, hosted RPC/CRE secrets and the normal devnet Guard upgrade remain deployment prerequisites.
 
 No successful devnet deployment, live DON consensus, confidential attestation or institutional adoption is claimed by this implementation.
+
+Hosting follow-up: Vercel and Railway MCP connections are verified. Vercel deployment `dpl_8BnyiFYgcHQM4Qz7hi7HyZVZGdfS` is READY at `wysiwys-colosseum.vercel.app`; public homepage and manifest API checks passed. Railway settings, source pin, server variables and the volume are staged without starting runtime usage. The current Railway API rejects new legacy config-file settings, so the configuration now uses the official SDK 3.15.0 IaC specification with credentials preserved remotely. Its semantic configuration check and TypeScript check pass. The old CRE workflow requires new Guard and policy-store configuration before reuse. See `deploy/STATUS.md` for remaining blockers.
