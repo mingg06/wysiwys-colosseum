@@ -1,0 +1,34 @@
+# ==========================================================================
+# CRE PROJECT SETTINGS FILE
+# ==========================================================================
+# This workflow does not read from or write to a chain — the RPCs below are
+# here so you can extend Step 4 into an on-chain `writeReport` without extra
+# setup. See the README's "Customization" section.
+local-simulation:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
+
+staging-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
+    # Review workflow: Solana writes (simulator mock forwarder). URL from the project .env.
+    - chain-name: solana-devnet
+      url: ${CRE_HELIUS_SOLANA_DEVNET_RPC_URL}
+
+live-devnet:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
+    # Review workflow: Solana writes through the production Keystone forwarder.
+    - chain-name: solana-devnet
+      url: ${CRE_HELIUS_SOLANA_DEVNET_RPC_URL}
+
+# ==========================================================================
+production-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia
+      url: https://ethereum-sepolia-rpc.publicnode.com
+    - chain-name: ethereum-mainnet
+      url: https://ethereum-rpc.publicnode.com

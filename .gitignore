@@ -1,0 +1,37 @@
+# Anchor / Rust
+.anchor
+target
+**/*.rs.bk
+test-ledger
+.surfpool
+
+# Node
+node_modules
+dist
+build
+.next
+*.tsbuildinfo
+
+# Secrets: keypairs, API keys, tokens (see AGENTS.md "Secrets")
+keys/
+.env
+.env.*
+!.env.example
+
+# Runner database
+*.db
+*.sqlite
+*.sqlite3
+
+.DS_Store
+
+# Runner SQLite (history only)
+services/runner/data/
+
+# Private policy document (whitelist + salt). Only its hash (GUARD_POLICY_HASH) is public.
+workflow/policy.json
+# Policy registry documents (private whitelists), see scripts/policy-hash.ts --registry
+workflow/policies/
+
+# cre workflow deploy output
+binary.wasm.br.b64

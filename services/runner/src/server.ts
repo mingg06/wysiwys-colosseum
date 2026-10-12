@@ -1,0 +1,272 @@
+import { timingSafeEqual } from "node:crypto";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import type { Listener } from "./listener";
+import type { CreRunner } from "./cre";
+import { SettlementError, toWire, type Settlement } from "./settlement";
+import type { Store } from "./store";
+import type { ModeSwitch, ReviewMode } from "./mode";
+import { PublicKey } from "@solana/web3.js";
+import { parsePolicy, PolicyFormatError, policyHash } from "@wysiwys/shared";
+import decoderPkg from "../../../packages/decoder/package.json" with { type: "json" };
+
+/** Policy hashes commit to the decoder version (same string as scripts/policy-hash.ts and the workflow). */
+export const DECODER_VERSION = `${decoderPkg.name}@${decoderPkg.version}`;
+
+type Deps = {
+  programId: string;
+  store: Store;
+  health: Listener["health"];
+  /** Settlement routes for the app; absent means they are not served (404). */
+  settlement?: Settlement;
+  /** Bearer token the app's server must send. Null with settlement present means fail closed (503). */
+  settlementToken?: string | null;
+  /** Runs one review (CRE simulation, or a live re-trigger in gateway mode); absent means POST /review is not served (404). */
+  review?: Pick<CreRunner, "run">;
+  /** Bearer token for POST /review. Null with review present means fail closed (503). */
+  reviewToken?: string | null;
+  /** Review path switch (live DON or simulator); shown on /status, switched by POST /admin/mode. */
+  reviewMode?: Pick<ModeSwitch, "mode" | "available" | "forwarder" | "set">;
+  /** Operator token for POST /admin/mode. Null with reviewMode present means fail closed (503). */
+  adminToken?: string | null;
+  /** Token the CRE workflow sends to GET /cre/policies/:hash. Null means fail closed (503). */
+  policyFetchToken?: string | null;
+  rateLimitPerMinute?: number;
+  log?: (line: string) => void;
+};
+
+const MAX_REVIEWS = 200;
+const MAX_BODY = 2048;
+
+class HttpError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+function tokenMatches(header: string | undefined, token: string): boolean {
+  const given = Buffer.from(header?.startsWith("Bearer ") ? header.slice(7) : "");
+  const want = Buffer.from(token);
+  return given.length === want.length && timingSafeEqual(given, want);
+}
+
+async function readJson(req: IncomingMessage): Promise<unknown> {
+  let size = 0;
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    size += chunk.length;
+    if (size > MAX_BODY) throw new HttpError(413, "request too large");
+    chunks.push(chunk);
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new HttpError(400, "invalid JSON");
+  }
+}
+
+/** Fixed one-minute window per client address. */
+function rateLimiter(limit: number) {
+  const hits = new Map<string, { windowStart: number; count: number }>();
+  return (client: string): boolean => {
+    const now = Date.now();
+    const h = hits.get(client);
+    if (!h || now - h.windowStart >= 60_000) {
+      hits.set(client, { windowStart: now, count: 1 });
+      if (hits.size > 10_000) hits.clear();
+      return true;
+    }
+    return ++h.count <= limit;
+  };
+}
+
+/**
+ * GET /status (503 when the listener is unhealthy), GET /reviews (history only) and, when configured,
+ * the app's settlement routes under /frontend (bearer token, rate limited, identifiers only).
+ */
+export function createStatusServer(d: Deps): Server {
+  const log = d.log ?? console.log;
+  const allow = rateLimiter(d.rateLimitPerMinute ?? 60);
+
+  const send = (res: ServerResponse, status: number, body: unknown) => {
+    res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
+    res.end(JSON.stringify(body));
+  };
+
+  /**
+   * A policy document: validated as Policy v1 and stored by hash for the multisig, so members can read what
+   * they vote on. Either the treasury's current document (hash match) or a proposal whose version is higher
+   * than the current one when that is known.
+   */
+  async function storePolicy(input: unknown): Promise<[number, unknown]> {
+    const body = (input ?? {}) as Record<string, unknown>;
+    let multisig: string;
+    try {
+      multisig = new PublicKey(String(body.multisig ?? "")).toBase58();
+    } catch {
+      throw new HttpError(400, "invalid multisig");
+    }
+    let doc;
+    try {
+      doc = parsePolicy(body.document);
+    } catch (e) {
+      throw new HttpError(400, e instanceof PolicyFormatError ? e.message : "invalid policy document");
+    }
+    const current = await d.settlement!.currentPolicyHash(multisig);
+    if (!current) throw new HttpError(404, "multisig has no guard config");
+    const hash = Buffer.from(policyHash(doc as unknown as Record<string, unknown>, DECODER_VERSION)).toString("hex");
+    const now = Math.floor(Date.now() / 1000);
+    // The treasury's current document: its hash proves it, so store it for members to read and diff.
+    if (hash === current) {
+      d.store.putPolicy({ hash, multisig, document: JSON.stringify(doc), createdAt: now });
+      return [200, { hash, currentPolicyHash: current, currentVersionKnown: true, current: true }];
+    }
+    const currentDoc = d.store.getPolicyDocument(current);
+    const currentVersion = currentDoc ? (JSON.parse(currentDoc) as { version: number }).version : null;
+    if (currentVersion !== null && doc.version <= currentVersion) {
+      throw new HttpError(409, `version must be greater than ${currentVersion}`);
+    }
+    d.store.putPolicy({ hash, multisig, document: JSON.stringify(doc), createdAt: now });
+    return [200, { hash, currentPolicyHash: current, currentVersionKnown: currentVersion !== null, current: false }];
+  }
+
+  /** A creator's policy for a treasury about to be created: validated and stored by hash. */
+  function registerPolicy(input: unknown): [number, unknown] {
+    let doc;
+    try {
+      doc = parsePolicy(((input ?? {}) as Record<string, unknown>).document);
+    } catch (e) {
+      throw new HttpError(400, e instanceof PolicyFormatError ? e.message : "invalid policy document");
+    }
+    const hash = Buffer.from(policyHash(doc as unknown as Record<string, unknown>, DECODER_VERSION)).toString("hex");
+    d.store.putPolicy({ hash, multisig: "registered", document: JSON.stringify(doc), createdAt: Math.floor(Date.now() / 1000) });
+    return [200, { hash }];
+  }
+
+  function policyDocument(hash: string): [number, unknown] {
+    const document = d.store.getPolicyDocument(hash);
+    return document ? [200, { document: JSON.parse(document) }] : [404, { error: "unknown policy document" }];
+  }
+
+  /** The CRE workflow fetches a policy by the hash the treasury's GuardConfig names, and checks the hash itself. */
+  function crePolicyRoute(req: IncomingMessage, hash: string): [number, unknown] {
+    if (!d.policyFetchToken) throw new HttpError(503, "policy fetch is not configured");
+    if (!tokenMatches(req.headers.authorization, d.policyFetchToken)) throw new HttpError(401, "unauthorized");
+    if (!allow(req.socket.remoteAddress ?? "unknown")) throw new HttpError(429, "too many requests");
+    return policyDocument(hash);
+  }
+
+  async function settlementRoute(req: IncomingMessage, url: URL): Promise<[number, unknown]> {
+    const s = d.settlement!;
+    if (!d.settlementToken) throw new HttpError(503, "settlement is not configured");
+    if (!tokenMatches(req.headers.authorization, d.settlementToken)) throw new HttpError(401, "unauthorized");
+    if (!allow(req.socket.remoteAddress ?? "unknown")) throw new HttpError(429, "too many requests");
+
+    // Content-addressed read; the app checks membership and which hashes the treasury may read.
+    const policy = url.pathname.match(/^\/frontend\/policies\/([0-9a-f]{64})$/);
+    if (req.method === "GET" && policy) return policyDocument(policy[1]!);
+    if (req.method === "POST" && url.pathname === "/frontend/policies") return storePolicy(await readJson(req));
+    if (req.method === "POST" && url.pathname === "/frontend/policies/register") return registerPolicy(await readJson(req));
+    if (req.method === "POST" && url.pathname === "/frontend/policy-apply") {
+      return [200, { guardInstruction: toWire(await s.applyPolicyChange(await readJson(req))) }];
+    }
+
+    const groups = url.pathname.match(/^\/frontend\/groups\/([^/]+)$/);
+    if (req.method === "GET" && groups && groups[1] !== "prepare") {
+      const group = await s.guardedGroup(decodeURIComponent(groups[1]));
+      return group ? [200, group] : [404, { error: "not a guarded group" }];
+    }
+    if (req.method !== "POST") throw new HttpError(405, "method not allowed");
+    if (url.pathname === "/frontend/groups/prepare") {
+      const body = (await readJson(req)) as Record<string, unknown>;
+      // A chosen policy must already be stored, so the workflow can always fetch it by hash.
+      if (body?.policyHash !== undefined) {
+        if (typeof body.policyHash !== "string" || !/^[0-9a-f]{64}$/.test(body.policyHash)) throw new HttpError(400, "invalid policy hash");
+        if (!d.store.getPolicyDocument(body.policyHash)) throw new HttpError(409, "policy document is not stored; register it first");
+      }
+      const { instruction, ...group } = await s.prepareGuardedGroup(body);
+      return [200, { ...group, guardInstruction: toWire(instruction) }];
+    }
+    if (url.pathname === "/frontend/propose") return [200, { guardInstruction: toWire(await s.requestReview(await readJson(req))) }];
+    if (url.pathname === "/frontend/execute") return [200, { guardInstruction: toWire(await s.guardedExecute(await readJson(req))) }];
+    if (url.pathname === "/frontend/config-execute") {
+      return [200, { guardInstruction: toWire(await s.guardedConfigExecute(await readJson(req))) }];
+    }
+    throw new HttpError(404, "not found");
+  }
+
+  async function reviewRoute(req: IncomingMessage): Promise<[number, unknown]> {
+    if (!d.reviewToken) throw new HttpError(503, "review runner is not configured");
+    if (!tokenMatches(req.headers.authorization, d.reviewToken)) throw new HttpError(401, "unauthorized");
+    if (!allow(req.socket.remoteAddress ?? "unknown")) throw new HttpError(429, "too many requests");
+    const body = (await readJson(req)) as Record<string, unknown>;
+    let result;
+    try {
+      result = await d.review!.run({ multisig: String(body?.multisig ?? ""), txIndex: String(body?.txIndex ?? "") });
+    } catch (e) {
+      if (e instanceof Error && /invalid/.test(e.message)) throw new HttpError(400, e.message);
+      throw e;
+    }
+    // The outcome on chain is the truth; this is the run log for operators.
+    return [result.ok ? 200 : 502, result];
+  }
+
+  const pathInfo = () => d.reviewMode && { mode: d.reviewMode.mode, available: d.reviewMode.available, forwarder: d.reviewMode.forwarder };
+
+  async function adminModeRoute(req: IncomingMessage): Promise<[number, unknown]> {
+    if (!d.adminToken) throw new HttpError(503, "review path switching is not configured");
+    if (!tokenMatches(req.headers.authorization, d.adminToken)) throw new HttpError(401, "unauthorized");
+    if (!allow(req.socket.remoteAddress ?? "unknown")) throw new HttpError(429, "too many requests");
+    const mode = String(((await readJson(req)) as Record<string, unknown>)?.mode ?? "") as ReviewMode;
+    try {
+      d.reviewMode!.set(mode);
+    } catch (e) {
+      throw new HttpError(400, e instanceof Error ? e.message : "invalid mode");
+    }
+    log(`[server] review path set to ${mode} by operator`);
+    return [200, pathInfo()];
+  }
+
+  return createServer(async (req, res) => {
+    const url = new URL(req.url ?? "/", "http://localhost");
+    try {
+      const crePolicy = url.pathname.match(/^\/cre\/policies\/([0-9a-f]{64})$/);
+      if (crePolicy && req.method === "GET") {
+        const [status, body] = crePolicyRoute(req, crePolicy[1]!);
+        return send(res, status, body);
+      }
+      if (url.pathname === "/admin/mode" && req.method === "POST" && d.reviewMode) {
+        const [status, body] = await adminModeRoute(req);
+        return send(res, status, body);
+      }
+      if (url.pathname === "/review" && req.method === "POST" && d.review) {
+        const [status, body] = await reviewRoute(req);
+        return send(res, status, body);
+      }
+      if (url.pathname.startsWith("/frontend/") && d.settlement) {
+        const [status, body] = await settlementRoute(req, url);
+        return send(res, status, body);
+      }
+      if (req.method !== "GET") return send(res, 405, { error: "method not allowed" });
+      if (url.pathname === "/status") {
+        const h = d.health();
+        return send(res, h.ok ? 200 : 503, {
+          ok: h.ok, programId: d.programId, listener: h, reviews: d.store.counts(),
+          ...(d.reviewMode ? { reviewPath: pathInfo() } : {}),
+        });
+      }
+      if (url.pathname === "/reviews") {
+        const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 50) || 50, 1), MAX_REVIEWS);
+        return send(res, 200, { reviews: d.store.listReviews(limit) });
+      }
+      send(res, 404, { error: "not found" });
+    } catch (e) {
+      if (e instanceof HttpError || e instanceof SettlementError) return send(res, e.status, { error: e.message });
+      // Never echo internal errors: they can carry RPC URLs with API keys.
+      log(`[server] ${req.method} ${url.pathname} failed: ${e instanceof Error ? e.name : "error"}`);
+      send(res, 502, { error: "settlement preparation failed" });
+    }
+  });
+}
