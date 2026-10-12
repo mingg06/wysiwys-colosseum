@@ -1,6 +1,6 @@
 # Settlement orders
 
-Status: implementation in progress. Authorized by the user on 12 October 2026, including an explicit set of eligible source vaults and commits after passing checks.
+Status: implementation and local verification complete; hosted devnet deployment pending account access. Authorized by the user on 12 October 2026, including an explicit set of eligible source vaults and commits after passing checks.
 
 ## Contract
 
@@ -19,11 +19,14 @@ The new instruction/account contracts are an explicitly authorized extension to 
 1. Shared terms, identifiers, PDA helpers and documentation. Run shared tests and typecheck, then commit.
 2. Guard binding, authorization and atomic execution gate. Start with failing parser/security tests. Build the program and IDL; run Rust and local-validator integration checks for mismatches, bypasses, replay, wrong authority, deadlines, multi-vault races and rollback, then commit.
 3. Runner builders, app integration and a repeatable demo. Run workspace tests/typechecks and app checks, then commit. Document exact demo and deployment commands.
+4. Package the continuous Railway runner, runtime CRE dependencies and persistent SQLite; document the Vercel integration and exact hosted variables. Check the image, workflow tests, listener health and database persistence before committing. Verify Full Trial outbound connectivity on the actual Railway account before relying on a hosted demo.
 
 Phase 1 is committed as `f714b64`. Phase 2 passed 70 Rust unit tests, an Anchor SBF build and all 131 local-validator integration tests, including the shared-order race and atomic rollback. The compatible local validator is Agave 4.3; Agave 3.1 cannot execute this Anchor toolchain's SBPF output. These checks do not constitute a devnet deployment.
 
 Phase 3 includes Vercel for the frontend and existing Next.js API routes, plus one continuously running Railway runner/listener/CRE service with persistent SQLite. The existing browser-to-Next-to-runner flow remains intact. See `deploy/README.md` for the deployment configuration and account prerequisites.
 
-The runner/app order integration is implemented. Checks passed: 41 shared tests, 108 runner tests, 154 app unit tests, 20 browser tests, workspace typechecks, production Next.js build and manifest smoke test, and 16 targeted local-validator builder checks. The creation-size check bounds order-enabled treasuries to eight invited members; legacy creation retains its existing bound. Railway container/runtime verification is tracked with the hosting phase.
+Phase 3 is committed as `6028983`. Checks passed: 41 shared tests, 108 runner tests, 154 app unit tests, 20 browser tests, workspace typechecks, production Next.js build and manifest smoke test, and 16 targeted local-validator builder checks. The creation-size check bounds order-enabled treasuries to eight invited members; legacy creation retains its existing bound.
+
+Phase 4 passed the Docker image build, three runtime/connectivity tests, 82 workflow tests inside the image and a container smoke check for finalized subscription, listener health, bearer rejection and SQLite cursor persistence across restart. Idle container memory was approximately 127 MiB; CRE compilation peak memory has not been measured. See `deploy/railway/VERIFICATION.md`. Vercel/Railway project access, Full Trial account verification, hosted RPC/CRE secrets and the normal devnet Guard upgrade remain deployment prerequisites.
 
 No successful devnet deployment, live DON consensus, confidential attestation or institutional adoption is claimed by this implementation.
