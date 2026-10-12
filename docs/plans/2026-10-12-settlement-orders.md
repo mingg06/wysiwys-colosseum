@@ -20,4 +20,8 @@ The new instruction/account contracts are an explicitly authorized extension to 
 2. Guard binding, authorization and atomic execution gate. Start with failing parser/security tests. Build the program and IDL; run Rust and local-validator integration checks for mismatches, bypasses, replay, wrong authority, deadlines, multi-vault races and rollback, then commit.
 3. Runner builders, app integration and a repeatable demo. Run workspace tests/typechecks and app checks, then commit. Document exact demo and deployment commands.
 
-No successful devnet deployment, live DON consensus, confidential attestation or institutional adoption is claimed by this implementation. Railway deployment is tracked separately from the on-chain feature.
+Phase 1 is committed as `f714b64`. Phase 2 passed 70 Rust unit tests, an Anchor SBF build and all 131 local-validator integration tests, including the shared-order race and atomic rollback. The compatible local validator is Agave 4.3; Agave 3.1 cannot execute this Anchor toolchain's SBPF output. These checks do not constitute a devnet deployment.
+
+Phase 3 includes Vercel for the frontend and existing Next.js API routes, plus one continuously running Railway runner/listener/CRE service with persistent SQLite. The existing browser-to-Next-to-runner flow remains intact. See `deploy/README.md` for the deployment configuration and account prerequisites.
+
+No successful devnet deployment, live DON consensus, confidential attestation or institutional adoption is claimed by this implementation.

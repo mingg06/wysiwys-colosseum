@@ -7,6 +7,9 @@ pub const REVIEW_SEED: &[u8] = b"review";
 pub const EXECUTOR_SEED: &[u8] = b"executor";
 pub const FORWARDER_SEED: &[u8] = b"forwarder";
 pub const POLICY_CHANGE_SEED: &[u8] = b"policy_change";
+pub const SETTLEMENT_BINDING_SEED: &[u8] = b"settlement_binding";
+pub const SETTLEMENT_ORDER_SEED: &[u8] = b"settlement_order";
+pub const MAX_SETTLEMENT_VAULTS: usize = 8;
 
 // Anchor discriminators of Squads v4 accounts and instructions (sha256 of "account:<Name>" / "global:<name>").
 pub const VAULT_TRANSACTION_DISCRIMINATOR: [u8; 8] = [168, 250, 162, 100, 81, 14, 162, 207];

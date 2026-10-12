@@ -48,6 +48,13 @@ const GUARD_ERRORS = [
   "PolicyChangeOutdated",
   "InvalidPolicyChange",
   "GuardInMessage",
+  "InvalidSettlementBinding",
+  "InvalidSettlementAuthority",
+  "SettlementOrderRequired",
+  "InvalidSettlementOrder",
+  "SettlementMismatch",
+  "SettlementExpired",
+  "SettlementAlreadyConsumed",
 ] as const;
 
 export type GuardErrorName = (typeof GUARD_ERRORS)[number];

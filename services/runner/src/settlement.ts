@@ -123,6 +123,7 @@ export function createSettlement(o: { connection: Connection; programId: PublicK
     return program.methods
       .guardedExecute()
       .accountsPartial({
+        settlementOrder: programId, // Anchor's absent optional-account sentinel for legacy treasuries.
         config: configPda(multisig), review, multisig, proposal, vaultTransaction,
         destination: new PublicKey(destination), executor, squadsProgram: sqds.PROGRAM_ID, instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
       })

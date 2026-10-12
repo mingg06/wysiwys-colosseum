@@ -193,6 +193,7 @@ describe("apply_policy_change", () => {
       program.methods
         .guardedExecute()
         .accountsPartial({
+          settlementOrder: null,
           config: desk.config, review, multisig: desk.multisigPda, proposal: p.proposalPda, vaultTransaction: p.transactionPda,
           destination: desk.counterpartyAta, executor: desk.executorPda, squadsProgram: SQUADS_PROGRAM_ID,
           instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,

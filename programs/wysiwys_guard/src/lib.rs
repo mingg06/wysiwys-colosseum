@@ -6,6 +6,7 @@ pub mod events;
 pub mod instructions;
 pub mod logic;
 pub mod state;
+pub mod settlement;
 
 pub use instructions::*;
 
@@ -37,6 +38,14 @@ pub mod wysiwys_guard {
 
     pub fn request_review(ctx: Context<RequestReview>) -> Result<()> {
         instructions::request_review::handle_request_review(ctx)
+    }
+
+    pub fn initialize_settlement_binding(ctx: Context<InitializeSettlementBinding>, authority: Pubkey) -> Result<()> {
+        instructions::settlement_orders::handle_initialize_settlement_binding(ctx, authority)
+    }
+
+    pub fn authorize_settlement_order(ctx: Context<AuthorizeSettlementOrder>, order_id: [u8; 32], allowed_vaults: Vec<Pubkey>, action_kind: u8, destination: Pubkey, recipient: Pubkey, mint: Pubkey, amount: u64, decimals: u8, expires_at: i64) -> Result<()> {
+        instructions::settlement_orders::handle_authorize_settlement_order(ctx, order_id, allowed_vaults, action_kind, destination, recipient, mint, amount, decimals, expires_at)
     }
 
     pub fn on_report(ctx: Context<OnReport>, metadata: Vec<u8>, report: Vec<u8>) -> Result<()> {

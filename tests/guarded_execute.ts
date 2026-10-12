@@ -44,6 +44,7 @@ describe("guarded_execute", () => {
     return program.methods
       .guardedExecute()
       .accountsPartial({
+        settlementOrder: null,
         config: desk.config,
         review: f.review,
         multisig: desk.multisigPda,
@@ -183,6 +184,7 @@ describe("guarded_execute", () => {
       program.methods
         .guardedExecute()
         .accountsPartial({
+          settlementOrder: null,
           config: d.config, review, multisig: d.multisigPda, proposal: p.proposalPda, vaultTransaction: p.transactionPda,
           destination: d.counterpartyAta, executor: d.executorPda, squadsProgram: SQUADS_PROGRAM_ID, instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
         })

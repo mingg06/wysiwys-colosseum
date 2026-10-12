@@ -72,6 +72,116 @@
       "args": []
     },
     {
+      "name": "authorize_settlement_order",
+      "discriminator": [
+        144,
+        93,
+        147,
+        30,
+        36,
+        243,
+        14,
+        63
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true
+        },
+        {
+          "name": "settlement_order",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  111,
+                  114,
+                  100,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "arg",
+                "path": "order_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "allowed_vaults",
+          "type": {
+            "vec": "pubkey"
+          }
+        },
+        {
+          "name": "action_kind",
+          "type": "u8"
+        },
+        {
+          "name": "destination",
+          "type": "pubkey"
+        },
+        {
+          "name": "recipient",
+          "type": "pubkey"
+        },
+        {
+          "name": "mint",
+          "type": "pubkey"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "decimals",
+          "type": "u8"
+        },
+        {
+          "name": "expires_at",
+          "type": "i64"
+        }
+      ]
+    },
+    {
       "name": "guarded_config_execute",
       "discriminator": [
         65,
@@ -254,6 +364,45 @@
         },
         {
           "name": "instructions_sysvar"
+        },
+        {
+          "name": "settlement_binding",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  98,
+                  105,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "multisig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "settlement_order",
+          "writable": true,
+          "optional": true
         }
       ],
       "args": []
@@ -372,6 +521,103 @@
         {
           "name": "review_deadline_secs",
           "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "initialize_settlement_binding",
+      "discriminator": [
+        84,
+        216,
+        182,
+        212,
+        218,
+        44,
+        223,
+        154
+      ],
+      "accounts": [
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "multisig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "multisig",
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "create_key",
+          "signer": true
+        },
+        {
+          "name": "settlement_binding",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  101,
+                  116,
+                  116,
+                  108,
+                  101,
+                  109,
+                  101,
+                  110,
+                  116,
+                  95,
+                  98,
+                  105,
+                  110,
+                  100,
+                  105,
+                  110,
+                  103
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "multisig"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "authority",
+          "type": "pubkey"
         }
       ]
     },
@@ -544,6 +790,32 @@
         222,
         15
       ]
+    },
+    {
+      "name": "SettlementBinding",
+      "discriminator": [
+        151,
+        6,
+        110,
+        243,
+        74,
+        182,
+        49,
+        13
+      ]
+    },
+    {
+      "name": "SettlementOrder",
+      "discriminator": [
+        83,
+        79,
+        32,
+        174,
+        222,
+        52,
+        54,
+        179
+      ]
     }
   ],
   "events": [
@@ -610,6 +882,32 @@
         2,
         101,
         150
+      ]
+    },
+    {
+      "name": "SettlementOrderAuthorized",
+      "discriminator": [
+        155,
+        151,
+        66,
+        188,
+        156,
+        64,
+        157,
+        52
+      ]
+    },
+    {
+      "name": "SettlementOrderConsumed",
+      "discriminator": [
+        181,
+        11,
+        184,
+        215,
+        112,
+        36,
+        177,
+        152
       ]
     }
   ],
@@ -758,6 +1056,41 @@
       "code": 6028,
       "name": "GuardInMessage",
       "msg": "Vault transaction must not invoke the guard program"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidSettlementBinding",
+      "msg": "Settlement binding is invalid or cannot be enabled after the first proposal"
+    },
+    {
+      "code": 6030,
+      "name": "InvalidSettlementAuthority",
+      "msg": "Back-office authority must be a separate key from treasury members"
+    },
+    {
+      "code": 6031,
+      "name": "SettlementOrderRequired",
+      "msg": "This treasury requires an authorized settlement order"
+    },
+    {
+      "code": 6032,
+      "name": "InvalidSettlementOrder",
+      "msg": "Settlement order terms are invalid"
+    },
+    {
+      "code": 6033,
+      "name": "SettlementMismatch",
+      "msg": "Stored payment does not match the authorized settlement order"
+    },
+    {
+      "code": 6034,
+      "name": "SettlementExpired",
+      "msg": "Settlement order deadline has passed"
+    },
+    {
+      "code": 6035,
+      "name": "SettlementAlreadyConsumed",
+      "msg": "Settlement order has already been consumed"
     }
   ],
   "types": [
@@ -1128,6 +1461,170 @@
           },
           {
             "name": "Executed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SettlementBinding",
+      "docs": [
+        "Immutable opt-in, created only before this multisig's first proposal."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "multisig",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SettlementOrder",
+      "docs": [
+        "Permanent shared obligation record. Only consumption fields can change."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "allowed_vaults",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "action_kind",
+            "type": "u8"
+          },
+          {
+            "name": "destination",
+            "type": "pubkey"
+          },
+          {
+            "name": "recipient",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "decimals",
+            "type": "u8"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          },
+          {
+            "name": "consumed",
+            "type": "bool"
+          },
+          {
+            "name": "settled_multisig",
+            "type": "pubkey"
+          },
+          {
+            "name": "settled_tx_index",
+            "type": "u64"
+          },
+          {
+            "name": "settled_tx_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "settled_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SettlementOrderAuthorized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SettlementOrderConsumed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "order",
+            "type": "pubkey"
+          },
+          {
+            "name": "multisig",
+            "type": "pubkey"
+          },
+          {
+            "name": "tx_index",
+            "type": "u64"
+          },
+          {
+            "name": "tx_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }

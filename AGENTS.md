@@ -128,6 +128,13 @@ Plan: `docs/plans/2026-10-06-wysiwys-guard-migration.md`. Ask before changing an
 
 ## Component guidelines
 
+### Authorized settlement-order extension (12 October 2026)
+- See `docs/plans/2026-10-12-settlement-orders.md`. New, opt-in treasuries may initialize an immutable `SettlementBinding` before their first proposal, signed by the treasury create key. Its independent back-office authority must not be a Squads member or executor.
+- `initialize_settlement_binding(authority)` and `authorize_settlement_order(...)` are authorized additions. Seeds are `["settlement_binding", multisig]` and `["settlement_order", authority, order_id [32]]`, owned by `packages/shared`. Existing GuardConfig, Review and report v2 layouts stay frozen.
+- `guarded_execute` always receives the deterministic binding account and optionally a writable order account. A bound treasury requires an unconsumed, unexpired order matching the actual stored payment, live token facts and explicitly approved source vault. Order and review consumption roll back together on failure. Order records are never closed or reset.
+- The executor still signs only the existing two Squads execution CPIs. Legacy unbound treasuries retain their review gate. Clients must use the updated IDL.
+- Hosting is Vercel for Next.js and its API routes, with one continuous Railway runner/listener/CRE service and a persistent `/data` volume. See `deploy/README.md`. Never enable sleeping for the event listener.
+
 ### Guard program (`programs/wysiwys_guard`)
 - Instructions: `initialize_guard`, `request_review`, `on_report`, `guarded_execute`, `guarded_config_execute` (agreed 7 Oct), `apply_policy_change` (agreed 7 Oct, voted policy changes). No admin, pause or other guard config update. Nothing else without team agreement.
 - Security rules (every rule has a test; never weaken a security test to make something pass):

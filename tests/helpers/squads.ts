@@ -60,7 +60,8 @@ export async function sendWithFreshBlockhash(
   const tx = new Transaction({ feePayer: signers[0].publicKey, blockhash, lastValidBlockHeight }).add(...ixs);
   tx.sign(...signers);
   const sig = await connection.sendRawTransaction(tx.serialize());
-  await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  const confirmation = await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+  if (confirmation.value.err) throw new Error(`Transaction failed on chain: ${JSON.stringify(confirmation.value.err)}`);
   return sig;
 }
 

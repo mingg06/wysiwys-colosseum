@@ -1,6 +1,12 @@
 use anchor_lang::prelude::*;
 
 #[event]
+pub struct SettlementOrderAuthorized { pub order: Pubkey, pub authority: Pubkey, pub order_id: [u8; 32] }
+
+#[event]
+pub struct SettlementOrderConsumed { pub order: Pubkey, pub multisig: Pubkey, pub tx_index: u64, pub tx_hash: [u8; 32] }
+
+#[event]
 pub struct ReviewRequested {
     pub review: Pubkey,
     pub multisig: Pubkey,

@@ -6,7 +6,7 @@ use crate::constants::*;
 use crate::errors::GuardError;
 use crate::events::Executed;
 use crate::logic;
-use crate::state::{GuardConfig, Review, ReviewStatus};
+use crate::state::{GuardConfig, Review, ReviewStatus, SettlementBinding, SettlementOrder};
 
 /// Remaining accounts: the Squads message accounts, in the order Squads expects
 /// (see @sqds/multisig accountsForTransactionExecute). They are passed through unchanged.
@@ -40,6 +40,11 @@ pub struct GuardedExecute<'info> {
     pub squads_program: UncheckedAccount<'info>,
     /// CHECK: address checked in the handler before it is read.
     pub instructions_sysvar: UncheckedAccount<'info>,
+    /// CHECK: deterministic PDA; must be an absent system account or a valid immutable binding.
+    #[account(seeds = [SETTLEMENT_BINDING_SEED, multisig.key().as_ref()], bump)]
+    pub settlement_binding: UncheckedAccount<'info>,
+    #[account(mut)]
+    pub settlement_order: Option<Account<'info, SettlementOrder>>,
 }
 
 pub fn handle_guarded_execute<'info>(ctx: Context<'info, GuardedExecute<'info>>) -> Result<()> {
@@ -67,6 +72,41 @@ pub fn handle_guarded_execute<'info>(ctx: Context<'info, GuardedExecute<'info>>)
         GuardError::GuardInMessage
     );
     let now = Clock::get()?.unix_timestamp;
+
+    // The gate lives in the original execute handler, so omitting an order cannot bypass it.
+    let binding = &ctx.accounts.settlement_binding;
+    let order_key = if binding.owner == &crate::ID {
+        let b = SettlementBinding::try_deserialize(&mut &binding.try_borrow_data()?[..])?;
+        require_keys_eq!(b.multisig, multisig_key, GuardError::InvalidSettlementBinding);
+        crate::settlement::check_authority(&b.authority, &ctx.accounts.multisig.try_borrow_data()?, &executor_key)?;
+        let order = ctx.accounts.settlement_order.as_mut().ok_or_else(|| error!(GuardError::SettlementOrderRequired))?;
+        require_keys_eq!(order.authority, b.authority, GuardError::InvalidSettlementAuthority);
+        let expected = Pubkey::find_program_address(&[SETTLEMENT_ORDER_SEED, b.authority.as_ref(), &order.order_id], &crate::ID).0;
+        require_keys_eq!(order.key(), expected, GuardError::InvalidSettlementOrder);
+        let p = crate::settlement::parse_payment(&ctx.accounts.vault_transaction.try_borrow_data()?, &multisig_key)?;
+        require_keys_eq!(p.destination, ctx.accounts.destination.key(), GuardError::SettlementMismatch);
+        let recipient = if p.kind == ACTION_SPL {
+            let dest = ctx.accounts.destination.try_borrow_data()?;
+            require!(ctx.accounts.destination.owner == &SPL_TOKEN_PROGRAM_ID && dest.len() == SPL_TOKEN_ACCOUNT_LEN && dest[SPL_TOKEN_STATE_OFFSET] == SPL_TOKEN_STATE_INITIALIZED, GuardError::SettlementMismatch);
+            require!(dest[..32] == p.mint.to_bytes(), GuardError::SettlementMismatch);
+            let source = ctx.remaining_accounts.iter().find(|acc| acc.key == &p.source).ok_or_else(|| error!(GuardError::SettlementMismatch))?;
+            let data = source.try_borrow_data()?;
+            require!(*source.owner == SPL_TOKEN_PROGRAM_ID && data.len() == SPL_TOKEN_ACCOUNT_LEN && data[..32] == p.mint.to_bytes() && data[32..64] == p.vault.to_bytes() && data[SPL_TOKEN_STATE_OFFSET] == SPL_TOKEN_STATE_INITIALIZED, GuardError::SettlementMismatch);
+            Pubkey::new_from_array(dest[32..64].try_into().unwrap())
+        } else { p.destination };
+        crate::settlement::check_order(order, &p, &recipient, now)?;
+        order.consumed = true;
+        order.settled_multisig = multisig_key;
+        order.settled_tx_index = ctx.accounts.review.tx_index;
+        order.settled_tx_hash = current_hash;
+        order.settled_at = now;
+        anchor_lang::AccountsExit::exit(order, &crate::ID)?;
+        Some(order.key())
+    } else {
+        require!(binding.owner == &anchor_lang::solana_program::system_program::ID && binding.data_is_empty(), GuardError::InvalidSettlementBinding);
+        require!(ctx.accounts.settlement_order.is_none(), GuardError::InvalidSettlementBinding);
+        None
+    };
 
     let (review_key, tx_index) = {
         let review = &mut ctx.accounts.review;
@@ -122,5 +162,8 @@ pub fn handle_guarded_execute<'info>(ctx: Context<'info, GuardedExecute<'info>>)
     invoke_signed(&ix, &infos, &[executor_seeds])?;
 
     emit!(Executed { review: review_key, multisig: multisig_key, tx_index });
+    if let Some(order) = order_key {
+        emit!(crate::events::SettlementOrderConsumed { order, multisig: multisig_key, tx_index, tx_hash: current_hash });
+    }
     Ok(())
 }

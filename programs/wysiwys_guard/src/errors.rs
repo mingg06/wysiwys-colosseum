@@ -61,4 +61,18 @@ pub enum GuardError {
     InvalidPolicyChange,
     #[msg("Vault transaction must not invoke the guard program")]
     GuardInMessage,
+    #[msg("Settlement binding is invalid or cannot be enabled after the first proposal")]
+    InvalidSettlementBinding,
+    #[msg("Back-office authority must be a separate key from treasury members")]
+    InvalidSettlementAuthority,
+    #[msg("This treasury requires an authorized settlement order")]
+    SettlementOrderRequired,
+    #[msg("Settlement order terms are invalid")]
+    InvalidSettlementOrder,
+    #[msg("Stored payment does not match the authorized settlement order")]
+    SettlementMismatch,
+    #[msg("Settlement order deadline has passed")]
+    SettlementExpired,
+    #[msg("Settlement order has already been consumed")]
+    SettlementAlreadyConsumed,
 }

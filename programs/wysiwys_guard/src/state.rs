@@ -1,5 +1,37 @@
 use anchor_lang::prelude::*;
 
+/// Immutable opt-in, created only before this multisig's first proposal.
+#[account]
+#[derive(InitSpace)]
+pub struct SettlementBinding {
+    pub multisig: Pubkey,
+    pub authority: Pubkey,
+    pub bump: u8,
+}
+
+/// Permanent shared obligation record. Only consumption fields can change.
+#[account]
+#[derive(InitSpace)]
+pub struct SettlementOrder {
+    pub authority: Pubkey,
+    pub order_id: [u8; 32],
+    #[max_len(8)]
+    pub allowed_vaults: Vec<Pubkey>,
+    pub action_kind: u8,
+    pub destination: Pubkey,
+    pub recipient: Pubkey,
+    pub mint: Pubkey,
+    pub amount: u64,
+    pub decimals: u8,
+    pub expires_at: i64,
+    pub consumed: bool,
+    pub settled_multisig: Pubkey,
+    pub settled_tx_index: u64,
+    pub settled_tx_hash: [u8; 32],
+    pub settled_at: i64,
+    pub bump: u8,
+}
+
 /// Immutable after `initialize_guard`. No instruction updates it.
 #[account]
 #[derive(InitSpace)]

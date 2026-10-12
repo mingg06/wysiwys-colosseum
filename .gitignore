@@ -7,6 +7,8 @@ test-ledger
 
 # Node
 node_modules
+.cache/
+.scratch/
 dist
 build
 .next
