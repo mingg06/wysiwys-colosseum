@@ -7,6 +7,8 @@ export const SEEDS = {
   executor: "executor",
   forwarder: "forwarder",
   policyChange: "policy_change",
+  settlementBinding: "settlement_binding",
+  settlementOrder: "settlement_order",
 } as const;
 
 export function txIndexSeed(txIndex: bigint): Uint8Array {
