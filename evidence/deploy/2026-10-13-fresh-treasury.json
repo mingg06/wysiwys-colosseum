@@ -1,0 +1,16 @@
+{
+  "verifiedAt": "2026-10-13T03:27:52.293Z",
+  "commitment": "finalized",
+  "cluster": "devnet",
+  "multisig": "CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb",
+  "guardProgram": "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S",
+  "threshold": 3,
+  "soleExecutorVerified": true,
+  "freshPdasVerified": true,
+  "mint": "CpB89SL5n8gkkzVKko7Hc6X3ShN6eVPSiQqfYho698zM",
+  "vaultTokenAmount": "10000000000000",
+  "tokenAuthoritiesClean": true,
+  "guardConfigPresent": false,
+  "liveForwarderProgramAndStateVerified": true,
+  "payerLamports": 678702720
+}

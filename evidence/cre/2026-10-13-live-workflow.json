@@ -1,0 +1,16 @@
+{
+  "deployment": {
+    "binaryURL": "https://storage.cre.chain.link/artifacts/00e5b1f7c6880ef5c268817a96194b378226f602d824b8b7c144b90df5102b5c/binary.wasm",
+    "deployedAt": "2026-10-13T04:48:44Z",
+    "status": "ACTIVE",
+    "txHash": null
+  },
+  "workflow": {
+    "lastExecutedAt": null,
+    "name": "wysiwys-review-live",
+    "ownerAddress": "0d06e59bb559ac627dba186e3d446865cea4bb79",
+    "registeredAt": "2026-10-13T04:48:42Z",
+    "status": "ACTIVE",
+    "workflowId": "00e5b1f7c6880ef5c268817a96194b378226f602d824b8b7c144b90df5102b5c"
+  }
+}

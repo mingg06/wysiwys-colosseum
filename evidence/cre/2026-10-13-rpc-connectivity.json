@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-10-13T02:50:11.924Z",
+  "results": [
+    {
+      "provider": "quicknode",
+      "status": "DEVNET_OK",
+      "finalizedSlot": 510480099
+    },
+    {
+      "provider": "helius",
+      "status": "DEVNET_OK",
+      "finalizedSlot": 510480097
+    },
+    {
+      "provider": "alchemy",
+      "status": "DEVNET_OK",
+      "finalizedSlot": 510480097
+    }
+  ]
+}

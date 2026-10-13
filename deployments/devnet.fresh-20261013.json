@@ -1,0 +1,54 @@
+{
+  "cluster": "devnet",
+  "programId": "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S",
+  "squadsProgram": "SQDS4ep65T869zMMBKyuUq6aD6EgTu8psMjkvj52pCf",
+  "tokenMetadataProgram": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+  "multisig": "CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb",
+  "createKey": "Exa99wEvQNKKAXSZNgGVGewPANLdqZJ5q6gvkcjWgqsD",
+  "vault": "GdkBxT28xi6T7azGm8gXbXSLRGaB2qMEBiZ4P2LP2XLU",
+  "vaultIndex": 0,
+  "executorPda": "FQTfMTJeawUuh9ZwBCpFwXh68BcN7otgHEucCgAV1Dpp",
+  "configPda": "6KEPXHe3ULSW59qEemDnofBUoSgiQT6oNqxjV8WA1uGF",
+  "guard": {
+    "forwarderProgram": "CXsKEJcs25TQEYU2e5jZ8QTPE3ffMLZhH6BWHrdcCCB5",
+    "forwarderState": "8QoomCQyPSkJ8WopJbX9B4HyvrFzziwvJdU8hZE6DCr9",
+    "policyHash": "0c35c6cdbf11dd50726384ad7537a7b60fc10207514c7f41759c8178be7daa9f",
+    "workflowOwner": "0d06e59bb559ac627dba186e3d446865cea4bb79",
+    "maxReviewLifetime": "3600",
+    "reviewDeadlineSecs": "900"
+  },
+  "mint": "CpB89SL5n8gkkzVKko7Hc6X3ShN6eVPSiQqfYho698zM",
+  "mintMetadata": "BsSF5aTFsKnddJArezhsSnAnd4Y6nWtDkJ5r2D2VKtKk",
+  "token": {
+    "name": "Mock USD",
+    "symbol": "mUSD",
+    "uri": "",
+    "decimals": 6
+  },
+  "vaultTokenAccount": "FP47rtHGfGXo3XoBKX7MhyzJqMQg9KvGuUoYWxinZybi",
+  "signers": [
+    "DkfYCnMcDpQXHxEt1rFoabPsyvXG1izc6fvNG9jHUB2c",
+    "2Z3fZDdaPS17anxDrsyAa4PPtzzwqQrS9oRJNyvRsPqt",
+    "2rbBpbnXtEGnC2n4HJVzqCoJz6SZnSSFYQvxWYLC9L86"
+  ],
+  "recipients": {
+    "whitelisted": {
+      "wallet": "5rJbUoz4SDx7D8pZiDVga6icNxew1ixYz8itNVwhpBCT",
+      "tokenAccount": "AVtUjHYw4ZU438yyrwGNTKSeFGUtztkJ3kHXpWQrgF41"
+    },
+    "lookalike": {
+      "wallet": "5rJ3muubo5cE9tV1cWzZGj1fSYeAGYwzsdTEAKBdwAu3",
+      "tokenAccount": "F1G73gEZN2yM13S98NZktesvsNCxChQz2bSmxszcTqe8"
+    }
+  },
+  "forwarders": {
+    "simulator": {
+      "program": "7kuEAA3mSC1Tz8gQjnvH7bKFda9xSPRRin9SZbH49cNK",
+      "state": "5Tipz3yhTBdVsDbaBxZkrp7Gjf3brGq5SKkxReefPMP7"
+    },
+    "live": {
+      "program": "CXsKEJcs25TQEYU2e5jZ8QTPE3ffMLZhH6BWHrdcCCB5",
+      "state": "8QoomCQyPSkJ8WopJbX9B4HyvrFzziwvJdU8hZE6DCr9"
+    }
+  }
+}

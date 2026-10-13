@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-13T04:57:34.222Z",
+  "workflowId": "00e5b1f7c6880ef5c268817a96194b378226f602d824b8b7c144b90df5102b5c",
+  "executionId": "0xc351e0bdee2d93465183d8b4df3dcef0fbdf9121b40d1691e58567a5dc76bfce",
+  "status": "ACCEPTED",
+  "caller": "0xb1E3d6A0342bE079624CA5F278c29851c1570721",
+  "workflowOwner": "0d06e59bb559ac627dba186e3d446865cea4bb79",
+  "input": {
+    "multisig": "CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb",
+    "txIndex": "2"
+  }
+}

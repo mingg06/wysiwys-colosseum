@@ -1,0 +1,15 @@
+{
+  "verifiedAt": "2026-10-13T05:06:47.595Z",
+  "commitment": "finalized",
+  "cluster": "devnet",
+  "multisig": "CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb",
+  "txIndex": "2",
+  "reviewStatus": "executed",
+  "proposalStatus": "Executed",
+  "votes": 3,
+  "recipientTokenAmount": "250000000",
+  "vaultTokenAmount": "9999750000000",
+  "forwarderRegistryVerified": true,
+  "activeManifestPublished": true,
+  "workflowId": "00e5b1f7c6880ef5c268817a96194b378226f602d824b8b7c144b90df5102b5c"
+}

@@ -1,0 +1,11 @@
+{
+  "multisig": "CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb",
+  "txIndex": "2",
+  "review": "8cwEsaNBLX8ArUetgp5Hjaq578UR9UcY14yzjmnyvtQK",
+  "signatures": {
+    "propose": "pb1pJpBxV8vshdhF9sdTxTYuHsdjdGr5QRDzCHsyNFAzSVKjfqc5XMMZg5nynFdWggjhsd4C8qrsKZsnzKVpp2X"
+  },
+  "scenario": "clean",
+  "amount": "250000000",
+  "cluster": "devnet"
+}

@@ -1,0 +1,15 @@
+{
+  "verifiedAt": "2026-10-13T04:54:41.528Z",
+  "commitment": "finalized",
+  "program": "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S",
+  "multisig": "CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb",
+  "config": "6KEPXHe3ULSW59qEemDnofBUoSgiQT6oNqxjV8WA1uGF",
+  "guard": {
+    "forwarderProgram": "CXsKEJcs25TQEYU2e5jZ8QTPE3ffMLZhH6BWHrdcCCB5",
+    "forwarderState": "8QoomCQyPSkJ8WopJbX9B4HyvrFzziwvJdU8hZE6DCr9",
+    "policyHash": "0c35c6cdbf11dd50726384ad7537a7b60fc10207514c7f41759c8178be7daa9f",
+    "workflowOwner": "0d06e59bb559ac627dba186e3d446865cea4bb79",
+    "maxReviewLifetime": "3600",
+    "reviewDeadlineSecs": "900"
+  }
+}

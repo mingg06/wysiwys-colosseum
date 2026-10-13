@@ -14,7 +14,7 @@
   "authorizedKeys": [
     {
       "type": "KEY_TYPE_ECDSA_EVM",
-      "publicKey": "REPLACE_WITH_TEAMMATE_TRIGGER_ADDRESS"
+      "publicKey": "0xb1E3d6A0342bE079624CA5F278c29851c1570721"
     }
   ]
 }

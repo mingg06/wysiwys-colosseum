@@ -2,7 +2,9 @@
 
 The Guard is already deployed on Solana devnet at `CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S`. Upgrade authority is the fresh deployer `Cbfkee83NPThVWNZ488BkN9sEQWsC54jpDK2weVhjtN7`. Public verification is in `evidence/deploy/2026-10-13-guard-devnet.json`. Do not deploy a replacement program just to configure CRE.
 
-The shared IDL, Guard source, Anchor config and review targets now name this Guard. Its IDL schema is unchanged. `deployments/devnet.json` intentionally contains only the verified program identity and `PROGRAM_DEPLOYED_TREASURY_PENDING`. The app disables treasury actions until a real treasury manifest replaces it. `deployments/devnet.historical.json` preserves the old treasury for recorded fixture tests; do not use its executor/config PDAs with the new Guard.
+The shared IDL, Guard source, Anchor config and review targets name this Guard. Its IDL schema is unchanged. `deployments/devnet.json`, `deployments/devnet.live.json` and the named fresh manifest now contain the initialized, finalized-chain-verified treasury. `deployments/devnet.historical.json` preserves the old treasury for recorded fixture tests; do not use its executor/config PDAs with the new Guard.
+
+The 13 October CRE deployment is complete: `wysiwys-review-live` is Active on ordinary DON, workflow ID `00e5b1f7c6880ef5c268817a96194b378226f602d824b8b7c144b90df5102b5c`, organization owner `0x0D06E59BB559Ac627dBa186E3D446865ceA4bb79`. Five required Vault secrets are uploaded. A fresh live report approved transaction index 2, followed by three votes and a finalized 250 mUSD guarded payout. See `evidence/cre/2026-10-13-live-payment.json` and `deploy/STATUS.md`. No TEE attestation is claimed. The following provisioning steps remain a guide for recreating setup; continue with hosting for this existing deployment. The policy-store fallback token and hosted store still need configuration for policy changes.
 
 ## 1. Prepare a clean workspace and private inputs
 
@@ -88,7 +90,7 @@ The configuration check derives executor/config PDAs under the new Guard and rej
 
 ## 4. Verify the CRE workflow before activation
 
-Authenticate CRE using the teammate's own account. For a live workflow, replace `REPLACE_WITH_TEAMMATE_TRIGGER_ADDRESS` in `review/config.live.json` with the actual EVM address that signs the authenticated runner trigger. This intentionally invalid placeholder blocks a premature live deployment. Do not substitute the historical trigger key or Guard workflow owner. Confirm the Railway policy-store URL is the actual running service and set the matching `POLICY_STORE_TOKEN` secret.
+Authenticate CRE using the teammate's own account. For a live workflow, verify that `authorizedKeys` in `review/config.live.json` names the actual EVM address that signs the authenticated runner trigger. The 13 October setup replaced the invalid placeholder with a new dedicated devnet caller; its private key remains local and gitignored. A different runner must supply its own caller address and matching private key. Do not substitute the historical trigger key or Guard workflow owner. Confirm the Railway policy-store URL is the actual running service and set the matching `POLICY_STORE_TOKEN` secret when using that store.
 
 Install and test the pinned review project:
 
