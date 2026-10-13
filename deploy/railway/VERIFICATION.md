@@ -17,4 +17,4 @@ Commands are documented in [the setup guide](../README.md#local-checks). The smo
 
 Vercel was subsequently deployed and its public homepage and manifest API passed HTTP checks. See [current deployment status](../STATUS.md) for exact identifiers and pending work.
 
-Not yet verified: Railway Full Trial status and real outbound RPC/CRE connectivity, simulation peak memory under the trial's RAM limit, a fresh devnet Guard, or a real hosted order mismatch/shared-order race. These require configured server-only credentials and deployment transactions. The full payment demo is not ready.
+These local checks preceded the fresh deployment. The continuous Railway listener, live DON review, finalized payment and current Vercel UI were subsequently verified in `evidence/deploy/2026-10-13-hosted-demo-check.json`; see [the demo guide](../DEMO-READY.md). The live service has its `/data` volume mounted. A controlled hosted restart, simulation peak memory, and the live settlement-order mismatch/shared-order race remain unverified.

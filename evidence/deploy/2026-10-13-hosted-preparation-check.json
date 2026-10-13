@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-10-13T06:58:28.203Z",
+  "ephemeralWallet": true,
+  "transactionsSubmitted": false,
+  "results": [
+    {
+      "chosenPolicy": false,
+      "httpStatus": 200,
+      "prepared": true,
+      "guardProgram": "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S"
+    },
+    {
+      "chosenPolicy": true,
+      "httpStatus": 200,
+      "prepared": true,
+      "guardProgram": "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S"
+    }
+  ]
+}

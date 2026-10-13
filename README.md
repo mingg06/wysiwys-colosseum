@@ -1,12 +1,14 @@
 # Wysiwys
 
-Fresh devnet Guard deployed; treasury bootstrap and CRE/hosting activation remain pending. Teammates: start with [the deployment handoff](deploy/TEAMMATE-HANDOFF.md).
+**Live devnet demo:** [wysiwys-colosseum.vercel.app](https://wysiwys-colosseum.vercel.app/)
+
+Guard, live CRE review and hosting are deployed. Teammates: start with [the deployment handoff](deploy/TEAMMATE-HANDOFF.md) and [current deployment status](deploy/STATUS.md).
 
 What You See Is What You Sign: a treasury payment firewall for Solana. A Squads v4 payment executes only with human approval AND a matching, current, unexpired, unused Guard review from a Chainlink CRE workflow. Design: `docs/plans/architecture.md`.
 
 The Colosseum addition is **one business obligation, one settlement across approved vaults**. New treasuries may require immutable, independently authorized settlement orders. The Guard matches the stored payment's source vault, recipient, token, exact integer amount and deadline, then consumes the shared order atomically with payment. A mismatch fails even when all humans and the policy review approve. See the [project and demo README](docs/colosseum/README.md).
 
-Hosting: [Vercel frontend and APIs, Railway continuous runner](deploy/README.md). Devnet, test keys only. The [frontend](https://wysiwys-colosseum.vercel.app) is deployed; the Railway backend and fresh Guard deployment are pending trial verification, credentials and devnet funding. See [deployment status](deploy/STATUS.md). The full payment demo is not ready, and no new live confidential execution is claimed.
+Hosting: [Vercel frontend and APIs, Railway continuous runner](deploy/README.md). Devnet, test keys only. The deployed demo uses the fresh Guard and an ordinary live Chainlink DON. The hosted listener triggered proposal #3, and finalized chain state confirms three approvals and an executed 250 mUSD payment. Open [the demo treasury](https://wysiwys-colosseum.vercel.app/?group=CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb), or see [deployment status](deploy/STATUS.md). Live TEE confidentiality and attestation are not claimed.
 
 ## Security (guard program)
 

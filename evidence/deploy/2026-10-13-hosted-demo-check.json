@@ -1,0 +1,62 @@
+{
+  "verifiedAt": "2026-10-13T06:58:28.203Z",
+  "sourceCommit": "2d07a15c9f785b0549877bb22f649ac07233de01",
+  "cluster": "devnet",
+  "railway": {
+    "projectId": "8feb4d17-a2fa-45c2-8753-517516756136",
+    "environmentId": "02bc742f-095d-4223-b8a2-e6d36b928588",
+    "serviceId": "1c572cbd-e708-4646-ba53-f72a9dce7e24",
+    "deploymentId": "1b94deba-2cec-4c27-bafb-cdad2f00817c",
+    "deploymentStatus": "SUCCESS",
+    "replicasRunning": 1,
+    "pendingChanges": false,
+    "volumeMount": "/data",
+    "volumeSizeMB": 500,
+    "statusHttp": 200,
+    "reviewMode": "live",
+    "subscribed": true,
+    "recentBackfill": true,
+    "triggeredTxIndex": "3",
+    "triggerLogAt": "2026-10-13T06:40:09.126370623Z",
+    "triggerAttempts": 1,
+    "triggerError": null
+  },
+  "vercel": {
+    "projectId": "prj_AW3G6XtSyEHJcuTBf2ozAajHQ7eC",
+    "deploymentId": "dpl_13GNWWfAzVehT6wxYVAEENtovGty",
+    "deploymentStatus": "READY",
+    "productionUrl": "https://wysiwys-colosseum.vercel.app/",
+    "freshManifestHttp": 200,
+    "runnerProxyHttp": 200
+  },
+  "browser": {
+    "demoUrl": "https://wysiwys-colosseum.vercel.app/?group=CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb",
+    "pathsChecked": [
+      "/",
+      "/transactions",
+      "/transactions/3",
+      "/status"
+    ],
+    "walletConnected": false,
+    "pageErrors": [],
+    "executedReviewVisible": true,
+    "threeApprovalsVisible": true,
+    "devnetLabelVisible": true
+  },
+  "anonymousAccess": {
+    "runnerFrontendPropose": 401,
+    "runnerCrePolicy": 401,
+    "vercelSquadsPrepare": 401
+  },
+  "authenticatedPreparation": {
+    "ephemeralWallet": true,
+    "transactionsSubmitted": false,
+    "defaultPolicyHttp": 200,
+    "explicitCurrentPolicyHttp": 200
+  },
+  "limitations": [
+    "The observed proposal #3 was created and signed outside this verification session. Browser-origin submission was not independently established.",
+    "No controlled runner restart or full persistence test was performed. The live /data volume was confirmed.",
+    "No new TEE attestation, adversarial scenario or settlement-order race is claimed."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-13T06:53:32.588Z",
+  "cluster": "devnet",
+  "commitment": "finalized",
+  "sourceCommit": "2d07a15c9f785b0549877bb22f649ac07233de01",
+  "multisig": "CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb",
+  "txIndex": "3",
+  "review": "EJLPLefJuWijnvYLqxRXqC5XTRRkZWDTttfY6jbZyyAa",
+  "reviewStatus": "executed",
+  "proposalStatus": "Executed",
+  "approvals": 3,
+  "policyMatchesManifest": true,
+  "transactionHashMatches": true,
+  "recipientTokenAmount": "500000000",
+  "vaultTokenAmount": "9999500000000",
+  "mintMatches": true,
+  "executed": true
+}
