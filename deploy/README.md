@@ -72,3 +72,7 @@ npm run build --workspace=app
 The container smoke script uses disposable HTTP/WebSocket fixtures, a uniquely named container and volume, and a dummy bearer token. It verifies finalized subscription, health, denied anonymous order preparation and SQLite cursor persistence across restart, then removes only its own resources. Set `DOCKER_BIN` if Docker is not on your PATH. It does not establish outbound connectivity or a real CRE execution.
 
 For a real devnet container run, mount a disposable volume at `/data`, supply variables with a gitignored environment file and map the port. Do not put real secret values into shell history. After restart, verify SQLite history and policy records persist, subscriptions resume, and finalized backfill catches missed events. Run a deliberate amount mismatch and a shared-order race only after the upgraded Guard is deployed. Record live URLs and transaction evidence when those checks succeed; configuration files alone are not deployment evidence.
+
+## Devnet provider selection
+
+The active sources remain QuickNode, Helius and Alchemy. The runner uses `HELIUS_DEVNET_RPC_URL` and `HELIUS_DEVNET_WS_URL`. The user's Solami access is mainnet-only, so the proposed replacement is deferred; do not set the previously suggested Solami variables. See `docs/plans/2026-10-13-solami-rpc.md`.

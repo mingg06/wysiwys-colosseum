@@ -140,6 +140,11 @@ describe('complete confidential review handler', () => {
     const h = harness({ endpoints: [ENDPOINTS[0]!, ENDPOINTS[0]!, ENDPOINTS[2]!] })
     expect(h.run).toThrow('RPC_PROVIDER_CONFIGURATION'); expect(h.write).not.toHaveBeenCalled()
   })
+  test('mainnet-only Solami cannot replace the third devnet provider', () => {
+    const h = harness({ endpoints: [ENDPOINTS[0]!, ENDPOINTS[1]!, 'https://mainnet.solami.dev/?api_key=dummy'] });
+    expect(h.run).toThrow('RPC_PROVIDER_CONFIGURATION');
+    expect(h.calls).toHaveLength(0); expect(h.write).not.toHaveBeenCalled();
+  });
   test('JSON-RPC errors cannot count as healthy providers even when result is also present', () => {
     const h = harness({ rpcEnvelopeError: true }); expect(h.run).toThrow('RPC_NO_QUORUM')
     expect(h.calls.filter(c => c.method === 'getMultipleAccounts')).toHaveLength(0)

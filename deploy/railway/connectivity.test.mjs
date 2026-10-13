@@ -27,7 +27,7 @@ test("deployment probe checks devnet and finalized subscriptions without exposin
   }
   try {
     const good = await run();
-    assert.equal(good.code, 0); assert.match(good.output, /logsSubscribe: reachable/);
+    assert.equal(good.code, 0, good.output); assert.match(good.output, /logsSubscribe: reachable/);
     assert.doesNotMatch(good.output, /PRIVATE_TEST|127\.0\.0\.1/);
     genesis = "wrong-cluster";
     const bad = await run(); assert.equal(bad.code, 1); assert.match(bad.output, /wrong cluster/);

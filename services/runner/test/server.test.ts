@@ -536,3 +536,9 @@ test("POST /frontend/groups/prepare passes a chosen policy hash only when its do
     s.close();
   }
 });
+
+test("mainnet-only Solami settings never override the devnet listener", () => {
+  const cfg = loadConfig({ SOLAMI_DEVNET_RPC_URL: "https://mainnet.solami.dev/?api_key=dummy", SOLAMI_DEVNET_WS_URL: "wss://mainnet.solami.dev/?api_key=dummy", HELIUS_DEVNET_RPC_URL: "https://devnet.helius-rpc.com/?api-key=dummy", HELIUS_DEVNET_WS_URL: "wss://devnet.helius-rpc.com/?api-key=dummy" }, () => null);
+  assert.equal(cfg.rpcUrl, "https://devnet.helius-rpc.com/?api-key=dummy");
+  assert.equal(cfg.wsUrl, "wss://devnet.helius-rpc.com/?api-key=dummy");
+});

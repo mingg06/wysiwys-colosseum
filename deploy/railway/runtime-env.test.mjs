@@ -20,3 +20,9 @@ test("runtime secrets round-trip through the dotenv grammar without injecting ne
   assert.throws(() => simulationEnvFile({ CRE_SOLANA_PRIVATE_KEY: "dummy'\nINJECTED=true" }), e => !e.message.includes("dummy"));
   assert.throws(() => simulationEnvFile({ CRE_POLICY_DOCUMENT: 'PRIVATE_RECIPIENT_NOT_JSON' }), e => !e.message.includes('PRIVATE'));
 });
+
+test("devnet simulation forwards Alchemy credentials and omits unused Solami credentials", () => {
+  const parsed = parseEnv(simulationEnvFile({ CRE_ALCHEMY_SOLANA_DEVNET_RPC_URL: "https://solana-devnet.g.alchemy.com/v2/dummy", CRE_SOLAMI_SOLANA_DEVNET_RPC_URL: "https://mainnet.solami.dev/?api_key=dummy" }));
+  assert.equal(parsed.CRE_ALCHEMY_SOLANA_DEVNET_RPC_URL, "https://solana-devnet.g.alchemy.com/v2/dummy");
+  assert.equal(parsed.CRE_SOLAMI_SOLANA_DEVNET_RPC_URL, undefined);
+});

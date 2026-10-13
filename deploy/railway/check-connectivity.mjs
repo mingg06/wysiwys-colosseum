@@ -20,8 +20,15 @@ try {
   const url = process.env.HELIUS_DEVNET_WS_URL || rpc.replace(/^https:/, "wss:").replace(/^http:/, "ws:");
   await new Promise((resolve, reject) => {
     const socket = new WebSocket(url);
-    const timer = setTimeout(() => { socket.close(); reject(new Error()); }, 12000);
-    const finish = (ok) => { clearTimeout(timer); socket.close(); ok ? resolve() : reject(new Error()); };
+    let settled = false;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      socket.close();
+      ok ? resolve() : reject(new Error());
+    };
+    const timer = setTimeout(() => finish(false), 12000);
     socket.addEventListener("open", () => socket.send(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "logsSubscribe", params: [{ mentions: [manifest.programId] }, { commitment: "finalized" }] })));
     socket.addEventListener("message", ({ data }) => { try { const response = JSON.parse(String(data)); if (response.id === 1) finish(!response.error && Number.isInteger(response.result)); } catch { finish(false); } });
     socket.addEventListener("error", () => finish(false));
