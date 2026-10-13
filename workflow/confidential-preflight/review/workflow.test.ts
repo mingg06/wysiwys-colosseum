@@ -45,8 +45,10 @@ function harness(options: {
 } = {}) {
   const doc = options.policyDoc ?? policy
   const secretValue = JSON.stringify(options.policySecret ?? doc)
-  const config = configSchema.parse(options.execution === 'don' ? { ...staging, execution: 'don' } : staging)
-  const local = { mode: 'local-simulation', chainSelector: staging.chainSelector, guardProgram: staging.guardProgram,
+  // Recorded accounts belong to the historical Guard; preserve their original identity in fixture replays.
+  const fixtureConfig = { ...staging, guardProgram: fixtures.guardProgram }
+  const config = configSchema.parse(options.execution === 'don' ? { ...fixtureConfig, execution: 'don' } : fixtureConfig)
+  const local = { mode: 'local-simulation', chainSelector: staging.chainSelector, guardProgram: fixtures.guardProgram,
     decoderVersion: staging.decoderVersion, approvalSeconds: staging.approvalSeconds, maxSlotLag: staging.maxSlotLag,
     screening: staging.screening, authorizedKeys: staging.authorizedKeys }
   const runtimeConfig = options.mode === 'local-simulation' ? configSchema.parse(local) : config
@@ -226,13 +228,16 @@ describe('workflow registration and live config', () => {
     expect(initWorkflow(configSchema.parse({ ...staging, execution: 'don' }))).toEqual(['don'])
     expect(plain.mock.calls[0]![1]).toBe(onReviewDon)
   })
-  test('live config targets the production Keystone forwarder with DON execution and an authorized trigger key', () => {
-    const config = configSchema.parse(live)
+  test('live config blocks deployment until the teammate provides the trigger key', () => {
+    if (live.authorizedKeys[0]?.publicKey === 'REPLACE_WITH_TEAMMATE_TRIGGER_ADDRESS') expect(() => configSchema.parse(live)).toThrow()
+    else expect(() => configSchema.parse(live)).not.toThrow()
+    const authorizedKeys = [{ type: 'KEY_TYPE_ECDSA_EVM', publicKey: `0x${'11'.repeat(20)}` }]
+    const config = configSchema.parse({ ...live, authorizedKeys })
     if (config.mode !== 'report') throw new Error('live config must report')
     expect(config.forwarderProgram).toBe('CXsKEJcs25TQEYU2e5jZ8QTPE3ffMLZhH6BWHrdcCCB5')
     expect(config.forwarderState).toBe('8QoomCQyPSkJ8WopJbX9B4HyvrFzziwvJdU8hZE6DCr9')
     expect(config.execution).toBe('don')
-    expect(config.authorizedKeys).toEqual([{ type: 'KEY_TYPE_ECDSA_EVM', publicKey: '0xD6Bbf377d9ce95975a78b84656548B255d816325' }])
+    expect(config.authorizedKeys).toEqual(authorizedKeys)
     const perTarget = { forwarderProgram: undefined, forwarderState: undefined, authorizedKeys: undefined, execution: undefined, policyStoreUrl: undefined }
     expect({ ...live, ...perTarget }).toEqual({ ...staging, ...perTarget })
   })
@@ -341,7 +346,7 @@ describe('policy fetched by hash from the runner store', () => {
     })
   }
   test('live and staging configs name a policy store', () => {
-    expect(configSchema.parse(live)).toMatchObject({ policyStoreUrl: 'https://runner.13-250-78-41.sslip.io' })
+    expect(configSchema.parse({ ...live, authorizedKeys: [{ type: 'KEY_TYPE_ECDSA_EVM', publicKey: `0x${'11'.repeat(20)}` }] })).toMatchObject({ policyStoreUrl: 'https://runner-production-1e71.up.railway.app' })
     expect(configSchema.parse(staging)).toMatchObject({ policyStoreUrl: 'http://127.0.0.1:8787' })
   })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import fixtures from './fixtures/devnet-e2e.json'
-import deployment from '../../../deployments/devnet.json'
+import deployment from '../../../deployments/devnet.historical.json'
 import { ACTION_KIND, ReviewReason, VERDICT, decodeReportPayload, destinationHash, parsePolicy, txHash, type PolicyV1 } from '../../../packages/shared/src/index'
 import { base64ToBytes, buildPayload, decide, parseGuardConfig, parseReview, planReview, type AccountSnapshot } from './review-logic'
 

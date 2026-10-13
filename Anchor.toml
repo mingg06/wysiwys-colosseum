@@ -6,12 +6,12 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-wysiwys_guard = "9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya"
+wysiwys_guard = "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S"
 # Local tests only. Never deploy to devnet.
 test_forwarder = "EZFysCCewwyWGMoGPySCLRqNQUcz1sVLJbZCUKFWwkcr"
 
 [programs.devnet]
-wysiwys_guard = "9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya"
+wysiwys_guard = "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S"
 
 [provider]
 cluster = "localnet"

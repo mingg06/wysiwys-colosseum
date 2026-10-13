@@ -1,0 +1,21 @@
+{
+  "network": "solana-devnet",
+  "verifiedDate": "2026-10-13",
+  "programId": "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S",
+  "owner": "BPFLoaderUpgradeab1e11111111111111111111111",
+  "programData": "7mRmRBUFGPLxhMjR3ypVxW2yauP5dHE4VSAUYLkTMEH9",
+  "upgradeAuthority": "Cbfkee83NPThVWNZ488BkN9sEQWsC54jpDK2weVhjtN7",
+  "lastDeployedSlot": 510462395,
+  "dataLength": 342240,
+  "localAndDeployedBytecodeSha256": "e36cb54f0676b576e3633b732e172f29f90d8631bec53a5febaa2baa6a714036",
+  "verification": [
+    "Agave 4.3.0 solana program show --url devnet",
+    "Agave 4.3.0 solana program dump --url devnet",
+    "SHA-256 comparison with target/deploy/wysiwys_guard.so"
+  ],
+  "limitations": [
+    "This verifies the deployed binary matches the local build, not a reproducible build from source.",
+    "Clients now target this Guard; fresh treasury creation and GuardConfig initialization remain pending.",
+    "No new treasury, CRE report delivery, hosted payment execution or TEE attestation was verified."
+  ]
+}

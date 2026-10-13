@@ -107,7 +107,7 @@ test("config reads both review paths' forwarders from deployments/devnet.json", 
 
 test("config falls back to the shared IDL address and public devnet RPC", () => {
   const cfg = loadConfig({}, () => null);
-  assert.equal(cfg.programId, "9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya");
+  assert.equal(cfg.programId, "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S");
   assert.equal(cfg.rpcUrl, "https://api.devnet.solana.com");
   assert.equal(cfg.port, 8787);
   assert.equal(cfg.triggerUrl, null);

@@ -1,5 +1,7 @@
 # Wysiwys review workflow (CRE)
 
+Fresh Guard setup: follow `deploy/TEAMMATE-HANDOFF.md`. All review targets name the verified new Guard. The live trigger address must be replaced with the actual teammate caller address before schema validation or deployment; the old EC2 policy-store endpoint is removed. Historical fixture accounts retain their original Guard identity.
+
 HTTP trigger `{ multisig, txIndex }` -> 2-of-3 reads (QuickNode, Helius, Alchemy, finalized) of the Review, the stored Squads transaction, the GuardConfig and the destination -> `tx_hash` check -> decode -> private policy (`POLICY_DOCUMENT`, hash must equal the guard's `policy_hash`) and Scorechain screening inside the TEE -> 117-byte report v2 through the forwarder to the guard's `on_report`. Contract: `docs/specs/guard-cre-interface.md`.
 
 Simulation only: the guard config points at the CRE simulator's mock forwarder, which does not verify DON signatures. The TEE is simulated locally.

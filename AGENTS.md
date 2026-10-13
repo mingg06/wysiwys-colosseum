@@ -65,7 +65,8 @@ anchor test --validator legacy -- --features short-policy-delay
                                            # Faster loop: anchor build -- --features short-policy-delay, then
                                            # anchor localnet --skip-build and mocha on one test file (anchor build
                                            # hangs while anchor localnet runs).
-anchor deploy --provider.cluster devnet
+bash scripts/deploy-guard-devnet.sh         # Agave >= 4.3, verifies devnet and manifest; keys/guard-program.json
+                                           # payer/upgrade authority: keys/devnet-deployer.json unless overridden
 
 # Devnet setup and end-to-end
 npx tsx scripts/bootstrap-devnet.ts        # idempotent; mUSD mint + metadata, Squads, recipients,

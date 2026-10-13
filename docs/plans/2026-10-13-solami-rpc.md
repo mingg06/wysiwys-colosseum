@@ -14,7 +14,7 @@ Any future Solami integration requires confirmed devnet endpoints and a new impl
 
 ## Next deployment prerequisites
 
-Follow `deploy/STATUS.md`: fund the authorized fresh devnet deployer, establish a usable CRE review path and private policy, verify Railway outbound connectivity and persistent volume, then deploy/bootstrap and record actual devnet evidence. Planned addresses are not deployed addresses. No bypass of CRE or mock report authenticity is authorized by this provider rollback.
+The fresh Guard is now deployed and verified. Follow `deploy/TEAMMATE-HANDOFF.md` to initialize a fresh treasury, configure CRE and the private policy, activate hosting and record actual devnet evidence. No bypass of CRE or mock report authenticity is authorized by this provider rollback.
 
 ## Verification
 

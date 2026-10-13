@@ -10,7 +10,7 @@ pub mod settlement;
 
 pub use instructions::*;
 
-declare_id!("9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya");
+declare_id!("CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S");
 
 #[program]
 pub mod wysiwys_guard {

@@ -1,5 +1,7 @@
 # Vercel frontend and Railway runner
 
+For the verified fresh Guard deployment, start with [the teammate handoff](TEAMMATE-HANDOFF.md). The active manifest intentionally disables treasury actions until a fresh treasury is bootstrapped.
+
 The browser calls the existing Next.js API routes on Vercel. Those server routes call the Railway runner with a bearer token. One continuous Railway process contains the finalized Solana listener, SQLite history and CRE triggering. All payments target Solana devnet. The site displays **Devnet, test keys only**.
 
 ## Before deployment
@@ -7,7 +9,7 @@ The browser calls the existing Next.js API routes on Vercel. Those server routes
 1. Have access to the repository, a Vercel project and a Railway project. No repository push or account deployment is performed by these configuration files.
 2. In Railway, verify that the account has **Full Trial**, rather than Limited Trial. Limited Trial restricts outbound networking. Open [Railway verification](https://railway.com/verify) and check the account's trial status. See [trial documentation](https://docs.railway.com/pricing/free-trial).
 3. Provide real devnet HTTPS and WSS RPC endpoints and credentials for the selected CRE path. Three independent RPC endpoints are needed by the review workflow. Do not reuse a single provider three times.
-4. Upgrade the Guard on devnet using the normal deployment key, without `short-policy-delay`, and publish the generated IDL with the code. Settlement-enabled treasuries must be newly created with their binding before any proposals. Local test binaries and the test forwarder are never devnet deployments.
+4. The fresh Guard is already deployed and its IDL is synchronized. Use `bash scripts/deploy-guard-devnet.sh` only for a reviewed devnet upgrade, without `short-policy-delay`. Settlement-enabled treasuries must be newly created with their binding before any proposals. Local test binaries and the test forwarder are never devnet deployments.
 5. Confirm `deployments/devnet.json` describes the intended devnet Guard, forwarders and default policy commitment. The app bundles this public manifest into Vercel server routes. Custom private policy documents stay in Railway secrets and SQLite, never in this manifest.
 
 ## Railway setup

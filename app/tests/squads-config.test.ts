@@ -152,11 +152,11 @@ test("runner group responses parse as guarded group configs", () => {
   assert.equal(config.executionMode, "guarded");
   assert.equal(config.settlementEnabled, true);
 });
-test("the checked-in devnet deployment parses", async () => {
+test("the historical devnet deployment parses", async () => {
   const { readFile } = await import("node:fs/promises");
   const raw = JSON.parse(
     await readFile(
-      new URL("../../deployments/devnet.json", import.meta.url),
+      new URL("../../deployments/devnet.historical.json", import.meta.url),
       "utf8",
     ),
   );
@@ -263,4 +263,14 @@ test("transaction preparation rejects foreign origins", () => {
       assertSameOrigin(new Request("https://desk.example/api/squads/prepare")),
     /origin/i,
   );
+});
+
+test("the active devnet manifest disables treasury actions until a fresh treasury exists", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const raw = JSON.parse(await readFile(new URL("../../deployments/devnet.json", import.meta.url), "utf8"));
+  if (raw.deploymentStatus === "PROGRAM_DEPLOYED_TREASURY_PENDING") {
+    assert.throws(() => parseDeployment(raw, true), /Invalid deployment addresses/);
+  } else {
+    assert.equal(parseDeployment(raw, true).guardProgram, raw.programId);
+  }
 });

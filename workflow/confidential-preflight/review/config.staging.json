@@ -1,7 +1,7 @@
 {
   "mode": "report",
   "chainSelector": "16423721717087811551",
-  "guardProgram": "9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya",
+  "guardProgram": "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S",
   "forwarderProgram": "7kuEAA3mSC1Tz8gQjnvH7bKFda9xSPRRin9SZbH49cNK",
   "forwarderState": "5Tipz3yhTBdVsDbaBxZkrp7Gjf3brGq5SKkxReefPMP7",
   "decoderVersion": "@wysiwys/decoder@0.1.0",

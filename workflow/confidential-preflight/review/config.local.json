@@ -1,7 +1,7 @@
 {
   "mode": "local-simulation",
   "chainSelector": "16423721717087811551",
-  "guardProgram": "9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya",
+  "guardProgram": "CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S",
   "decoderVersion": "@wysiwys/decoder@0.1.0",
   "approvalSeconds": 600,
   "maxSlotLag": 32,

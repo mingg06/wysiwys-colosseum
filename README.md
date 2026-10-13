@@ -1,5 +1,7 @@
 # Wysiwys
 
+Fresh devnet Guard deployed; treasury bootstrap and CRE/hosting activation remain pending. Teammates: start with [the deployment handoff](deploy/TEAMMATE-HANDOFF.md).
+
 What You See Is What You Sign: a treasury payment firewall for Solana. A Squads v4 payment executes only with human approval AND a matching, current, unexpired, unused Guard review from a Chainlink CRE workflow. Design: `docs/plans/architecture.md`.
 
 The Colosseum addition is **one business obligation, one settlement across approved vaults**. New treasuries may require immutable, independently authorized settlement orders. The Guard matches the stored payment's source vault, recipient, token, exact integer amount and deadline, then consumes the shared order atomically with payment. A mismatch fails even when all humans and the policy review approve. See the [project and demo README](docs/colosseum/README.md).
