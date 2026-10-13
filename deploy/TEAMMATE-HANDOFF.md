@@ -1,4 +1,8 @@
-# Continue the fresh devnet deployment
+# Teammate handoff: deploy Railway, connect Vercel, verify the browser flow
+
+Updated 13 October 2026. **Start with section 5.** Guard deployment, fresh treasury bootstrap, CRE deployment and the clean live DON payment are complete. Sections 1 to 4 are provisioning references, not instructions to repeat the completed setup. Preserve the existing Guard, assets, policy commitment and caller identity.
+
+Deployment commit `32428a858909064d7f64870bfbabe796bd90663e` is pushed to `main` at https://github.com/mingg06/wysiwys-colosseum. Deploy a reviewed `main` commit containing it and any subsequent hosting fixes. Hosting integration is the next task.
 
 The Guard is already deployed on Solana devnet at `CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S`. Upgrade authority is the fresh deployer `Cbfkee83NPThVWNZ488BkN9sEQWsC54jpDK2weVhjtN7`. Public verification is in `evidence/deploy/2026-10-13-guard-devnet.json`. Do not deploy a replacement program just to configure CRE.
 
@@ -18,7 +22,7 @@ cp .env.example .env
 cp workflow/confidential-preflight/.env.example workflow/confidential-preflight/.env
 ```
 
-Fill the files locally, without pasting keys into chat. Root `.env` needs `HELIUS_DEVNET_RPC_URL`, optional explicit `HELIUS_DEVNET_WS_URL`, and `SOLANA_WALLET` pointing to the devnet payer file. The CRE project's ignored `.env` needs the three `CRE_*_SOLANA_DEVNET_RPC_URL` values plus the chosen path's policy, screening and authentication inputs. `CRE_SOLANA_PRIVATE_KEY` is a funded devnet transmitter; `CRE_ETH_PRIVATE_KEY` is the CLI's throwaway EVM requirement. Neither is a treasury signing key.
+Fill the files locally, without pasting keys into chat. Root `.env` needs `HELIUS_DEVNET_RPC_URL`, optional explicit `HELIUS_DEVNET_WS_URL`, and `SOLANA_WALLET` pointing to the devnet payer file when using setup scripts. The CRE project's ignored `.env` needs the three `CRE_*_SOLANA_DEVNET_RPC_URL` values plus the chosen path's policy and screening inputs. A funded `CRE_SOLANA_PRIVATE_KEY` is for mock broadcast simulation only. Private-registry deployment on the verified CLI v1.37 uses account authentication and does not require `CRE_ETH_PRIVATE_KEY`; non-broadcast simulation can use its default key. Live DON uses its own transmitter. None of these belong to browser treasury signers.
 
 Check the payer balance and the deployed Guard:
 
@@ -90,7 +94,7 @@ The configuration check derives executor/config PDAs under the new Guard and rej
 
 ## 4. Verify the CRE workflow before activation
 
-Authenticate CRE using the teammate's own account. For a live workflow, verify that `authorizedKeys` in `review/config.live.json` names the actual EVM address that signs the authenticated runner trigger. The 13 October setup replaced the invalid placeholder with a new dedicated devnet caller; its private key remains local and gitignored. A different runner must supply its own caller address and matching private key. Do not substitute the historical trigger key or Guard workflow owner. Confirm the Railway policy-store URL is the actual running service and set the matching `POLICY_STORE_TOKEN` secret when using that store.
+For this existing deployment, authenticate as a member of the existing organization `originshack` (`org_L1ozCyAav2jsQEhH`), which owns the deployed workflow. A different organization would have a different owner and cannot reuse the immutable Guard binding. Preserve `authorizedKeys` in `review/config.live.json` and provision its matching dedicated caller key privately on Railway. The caller is not the organization owner or a treasury signing wallet. Changing caller identity requires a deliberate configuration update and fresh simulation before redeployment. Confirm the configured Railway policy-store origin is working and set its matching `POLICY_STORE_TOKEN` secret when using that store.
 
 Install and test the pinned review project:
 
@@ -146,11 +150,103 @@ Replace the argument with the actual returned transaction index. Decided or expi
 
 ## 5. Activate Railway and Vercel
 
-Use `deploy/README.md` and `deploy/railway/.env.example`. Railway is staged, not running: one runner service, one 500 MB `/data` volume, port 8787, one replica, sleeping disabled. Confirm Full Trial/outbound access. Supply secrets directly in Railway, never through Git. The staged source is still pinned to old commit `5b3f426`; update it to the reviewed commit containing the completed fresh manifest before activation.
+### Current public checks and expected configuration
 
-For simulation keep `CRE_PROJECT_DIR=/opt/wysiwys/workflow/confidential-preflight`, target `staging-settings` and broadcasting enabled. For live DON clear `CRE_PROJECT_DIR`, configure the actual `CRE_WORKFLOW_ID` and `CRE_GATEWAY_PRIVATE_KEY`, and upload the workflow secrets through the teammate's CRE account. Keep `SETTLEMENT_TOKEN` equal to Vercel's `WYSIWYS_SETTLEMENT_TOKEN`. Keep `POLICY_FETCH_TOKEN` equal to CRE's `POLICY_STORE_TOKEN` when using the runner policy store.
+Observed at **13:28 Asia/Kuala_Lumpur on 13 October 2026**; see [hosting readiness evidence](../evidence/deploy/2026-10-13-hosting-readiness.json):
 
-After applying the reviewed Railway patch, run `node deploy/railway/check-connectivity.mjs` in the service shell. Verify `/status` returns 200 with finalized subscription and recent backfill. Confirm SQLite and policy storage survive restart. Rebuild/redeploy Vercel only with the same verified active manifest and server-only RPC/runner variables.
+| Endpoint | Observed | Required after hosting |
+| --- | --- | --- |
+| `https://runner-production-1e71.up.railway.app/status` | HTTP 404 | HTTP 200, finalized subscription and recent backfill |
+| `https://wysiwys-colosseum.vercel.app/api/runner/status` | HTTP 503, unhealthy backend | HTTP 200, healthy runner |
+| `https://wysiwys-colosseum.vercel.app/api/squads/config` | HTTP 200, historical Guard/treasury | Fresh active manifest values |
+
+The frontend still names historical multisig `Boz5Dukxrwi5MGRam8bGimokhZwFRLHFdVeEsjaTLgPH` and Guard `9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya`. Recheck dashboard source commits and any deployment-path override; these public responses do not establish the current dashboard deployment or staged changes.
+
+The required fresh values are Guard `CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S`, multisig `CPKo7rv7raj27CU3wXjhKbpxxt3EQoebbQXy88uUGnbb`, and executor `FQTfMTJeawUuh9ZwBCpFwXh68BcN7otgHEucCgAV1Dpp`. Read remaining addresses and immutable Guard values from `deployments/devnet.json`.
+
+### Private inputs to obtain securely
+
+- Railway project/environment and Vercel production-project access. Confirm Railway Full Trial or the applicable plan permits outbound RPC/WebSocket/gateway traffic.
+- Working Helius devnet HTTPS/WSS credentials for the runner. Workflow RPC and screening secrets are already in CRE Vault; live-only triggering does not need them copied to Railway.
+- Existing dedicated caller key from ignored `keys/cre-gateway.json`. Load its `privateKey` field into Railway's secret variable opaquely over encrypted transport. Verify only its public address: `0xb1E3d6A0342bE079624CA5F278c29851c1570721`. Never print the key, paste it in chat, or put it in shell arguments.
+- Exact private `workflow/policy.json` or matching document in `workflow/policies/` for runner registration. Obtain it securely from the owner; do not reconstruct it from the hash or regenerate its salt.
+- Independent random server tokens supplied through secret inputs: one shared only by Railway/Vercel settlement routes, and one shared only by Railway/CRE policy fetching. Optional manual-review/admin tokens should be separate.
+
+Treasury signer keys and the Guard upgrade key are not hosting inputs. The Phantom funding wallet is not one of the existing demo's three generated voters. For browser testing use actual member wallets, or create a new guarded treasury with teammate-controlled devnet wallets after policy storage works. Arrange the configured mUSD funding with the owner. Browser wallets sign; the runner builds instructions.
+
+### A. Deploy the existing Railway service in live mode
+
+Use [deployment setup](README.md), [.railway/railway.ts](../.railway/railway.ts) and the variable names in `deploy/railway/.env.example`. The existing project is `8feb4d17-a2fa-45c2-8753-517516756136`, production environment `02bc742f-095d-4223-b8a2-e6d36b928588`, runner service `1c572cbd-e708-4646-ba53-f72a9dce7e24`. Re-inspect its staged changes before applying them. The last inspected source pin was `5b3f426`; update it to the reviewed commit containing the fresh deployment. Preserve the service and volume rather than creating duplicates.
+
+Use repository-root `deploy/railway/Dockerfile`, one replica, one 500 MB volume at `/data`, `/status` healthcheck and **sleeping/serverless disabled**. Leave the deprecated Railway Config File setting unset. The default image sets simulator environment defaults, so explicitly override `CRE_PROJECT_DIR` to empty. The Dockerfile has a `live` stage for platforms with a supported build-target setting; do not assume an unverified Railway target flag.
+
+| Railway variable | Setting |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `PORT` | `8787`; public domain target port must match |
+| `RUNNER_DB_PATH` | `/data/runner.db` |
+| `BACKFILL_INTERVAL_MS` | `60000` |
+| `HELIUS_DEVNET_RPC_URL`, `HELIUS_DEVNET_WS_URL` | Private working devnet endpoints |
+| `CRE_PROJECT_DIR` | Empty, overriding the image's simulator default |
+| `CRE_WORKFLOW_ID` | `00e5b1f7c6880ef5c268817a96194b378226f602d824b8b7c144b90df5102b5c` |
+| `CRE_GATEWAY_PRIVATE_KEY` | Existing dedicated caller key, supplied privately |
+| `CRE_GATEWAY_URL` | `https://01.gateway.zone-a.cre.chain.link` |
+| `SETTLEMENT_TOKEN` | Same private token as Vercel `WYSIWYS_SETTLEMENT_TOKEN` |
+| `POLICY_FETCH_TOKEN` | Same private token as CRE Vault `POLICY_STORE_TOKEN` |
+| `REVIEW_TOKEN` | Optional independent token for manual pending-review retries |
+| `ADMIN_TOKEN` | Optional; unnecessary for live-only mode |
+
+Leave `CRE_TRIGGER_URL` and `CRE_TRIGGER_TOKEN` unset. Pure live triggering requires no simulator API key, local Solana transmitter or treasury keypairs. The five workflow secrets are already uploaded to the correct organization's Vault.
+
+If using the CLI/IaC path, authenticate/link the existing project/environment, run `npm ci --prefix .railway`, then review `railway config plan` before `railway config apply`. Preserve secrets, avoid unintended deletions and update the source pin separately as the specification requires.
+
+After deployment, run `node deploy/railway/check-connectivity.mjs` inside the service. Require correct devnet genesis, acknowledged finalized `logsSubscribe` and gateway reachability. The helper permits unset workflow RPC variables in live-only mode. `/status` must return 200 with recent backfill and `reviewPath.mode` equal to `live`. Gateway reachability alone does not prove trigger authentication or delivery.
+
+### B. Register the initial policy and enable policy fetch
+
+**Live-only seeding detail:** `services/runner/src/index.ts` calls `seedPolicies` only when `cfg.cre` exists; the container writes its CRE environment only when `CRE_PROJECT_DIR` is set. With that variable empty, merely setting `CRE_POLICY_DOCUMENT` on Railway will not populate SQLite. Register the approved document explicitly rather than enabling the simulator for seeding.
+
+Use authenticated `POST /frontend/policies/register`, bearer `SETTLEMENT_TOKEN`, body `{ "document": <exact private policy object> }`, through an opaque local tool or secret-aware operator path over HTTPS. Do not print the document/token or place them in arguments. Require the returned public hash to equal `0c35c6cdbf11dd50726384ad7537a7b60fc10207514c7f41759c8178be7daa9f`. Verify the record persists in `/data/runner.db`.
+
+Configure Railway `POLICY_FETCH_TOKEN`, then create only the matching new CRE Vault secret `POLICY_STORE_TOKEN` in the existing organization. Do not bulk-create the five secrets that already exist. Create the repo-root `.scratch` directory if absent. An ignored reference-only `.scratch/policy-store-secrets.yaml` can contain:
+
+```yaml
+secretsNames:
+  POLICY_STORE_TOKEN:
+    - CRE_POLICY_STORE_TOKEN
+```
+
+Supply `CRE_POLICY_STORE_TOKEN` privately to the CLI environment, ensuring the ignored project `.env` has no conflicting blank/stale value. From `workflow/confidential-preflight`, run as a member of the existing organization:
+
+```bash
+cre secrets create ../../.scratch/policy-store-secrets.yaml --target live-devnet --secrets-auth browser --non-interactive --yes
+```
+
+Complete browser authorization if requested. The deployed workflow already requests this secret name and its `policyStoreUrl` is `https://runner-production-1e71.up.railway.app`. Keep that origin working. A different origin requires a deliberate workflow config change and native non-broadcast simulation before redeployment. Adding this secret does not require reactivating the already Active workflow.
+
+Test authorized policy retrieval without displaying the returned document; validate its shared `parsePolicy` format and decoder-bound hash opaquely. Anonymous retrieval must fail. Initial registration enables default-policy treasury creation. Working policy fetch is required for custom policies and voted changes not present in the existing Vault document.
+
+### C. Connect and redeploy Vercel
+
+Existing project `wysiwys-colosseum` (`prj_AW3G6XtSyEHJcuTBf2ozAajHQ7eC`), production URL `https://wysiwys-colosseum.vercel.app`. Deploy the reviewed `main` commit containing the fresh manifest. Set Root Directory to `app`, include source files outside that root, and use `app/vercel.json` with Node 22.x.
+
+| Vercel production variable | Setting |
+| --- | --- |
+| `WYSIWYS_SETTLEMENT_URL` | `https://runner-production-1e71.up.railway.app`, once healthy |
+| `WYSIWYS_SETTLEMENT_TOKEN` | Identical to Railway `SETTLEMENT_TOKEN` |
+| `SOLANA_RPC_URL` | Private working devnet HTTPS endpoint |
+| `WYSIWYS_DEPLOYMENT_PATH` | Unset, to bundle current `deployments/devnet.json` |
+| `NEXT_PUBLIC_ENABLE_STANDARD_GROUPS` | Unset or `false` |
+
+Keep credentials server-only; no caller key, treasury keypair or policy document belongs on Vercel. Redeploy after environment/source changes. `/api/squads/config` returns nested `config.guardProgram`, `config.multisig` and `config.executor`: require the fresh values above. `/api/runner/status` must return HTTP 200 with healthy listener. Resolve old source deployments/path overrides until production stops serving the historical treasury.
+
+### D. Hosted acceptance and persistence
+
+With member wallets on devnet and the configured test mint, propose a new 250 mUSD clean payment through the app. Its finalized `request_review` event must automatically trigger CRE through the hosted listener, without a local/manual trigger. Verify CRE execution, a finalized APPROVED on-chain Review, required votes and guarded execution. Votes may precede or follow review; the verdict alone cannot execute a payment. Keep the visible **Devnet, test keys only** label.
+
+Record source commit, public URLs, workflow execution ID and proposal/report/execute signatures in `evidence/`. Require Review Executed, matching recipient/vault balance changes, and replay refusal. Restart/redeploy the runner with its volume preserved; require healthy subscription/backfill and retained history, policy records and cursor, with no duplicate payout. Confirm anonymous frontend preparation and policy fetch fail. Any RPC, listener, gateway, policy or report error keeps payments blocked; no mock approval fallback.
+
+Then record the remaining adversarial demo scenarios in section 6 as they are actually exercised. Keep settlement-order tests separate: the existing bootstrap treasury is unbound. Update `deploy/STATUS.md` with actual hosted source commits, health, persistence and payment evidence. Follow repository TDD for implementation changes and seek agreement before changing frozen contracts or security/policy layers. Commit/push only when explicitly requested.
 
 ## 6. Settlement-order demo and recording
 

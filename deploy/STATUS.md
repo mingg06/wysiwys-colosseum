@@ -2,6 +2,8 @@
 
 Updated 13 October 2026, Asia/Kuala_Lumpur. Continue with [the teammate runbook](TEAMMATE-HANDOFF.md).
 
+Next task: [handoff section 5](TEAMMATE-HANDOFF.md#5-activate-railway-and-vercel), in order: deploy the Railway listener in live mode, register the private policy and configure its fetch token, redeploy Vercel with the fresh manifest, then prove browser-triggered review/payment and persistent runner state. Deployment commit `32428a858909064d7f64870bfbabe796bd90663e` is pushed to `main`.
+
 ## Verified fresh devnet Guard
 
 - Program: `CmG9aMQNYw51e2tLHgavLj2DzwjuRKdzvz8BoSMZBc6S`.
@@ -36,6 +38,8 @@ All three generated test voters approved, then guarded execution paid 250 mUSD. 
 - Only six variable names are staged: backfill interval, Helius RPC, Node environment, port, DB path and settlement token. CRE secrets are still required. Secret values were not read.
 - Confirm Full Trial/outbound connectivity, supply path-specific secrets, update the source pin to a tested commit with a complete fresh treasury manifest and apply the reviewed patch. Keep sleeping disabled.
 - Infrastructure specification: `.railway/railway.ts`. Do not set a deprecated `railway.json` configuration path.
+- Public check at 13:28 Asia/Kuala_Lumpur: reserved `/status` returned HTTP 404. Evidence: `evidence/deploy/2026-10-13-hosting-readiness.json`. Re-inspect source pin, staged changes and account outbound access before applying the hosting setup; the previous dashboard inspection is historical.
+- Live-only configuration must explicitly override the Docker image's `CRE_PROJECT_DIR` to empty. Current automatic policy seeding only runs with `cfg.cre`, so register the existing private document through authenticated `/frontend/policies/register` and require the active Guard's policy hash. See the handoff for opaque secret handling and policy-fetch setup.
 
 ## Vercel
 
@@ -43,6 +47,7 @@ All three generated test voters approved, then guarded execution paid 250 mUSD. 
 - URL: https://wysiwys-colosseum.vercel.app
 - Last verified READY deployment: `dpl_8BnyiFYgcHQM4Qz7hi7HyZVZGdfS`, commit `5b3f426`. Subsequent pushes may trigger frontend deployments; a READY frontend does not prove the backend works.
 - Rebuild with the completed fresh treasury manifest and working Railway URL/token. Runtime payment readiness is pending the runner, CRE path and chain verification.
+- Public check at 13:28 Asia/Kuala_Lumpur: `/api/runner/status` returned HTTP 503, and `/api/squads/config` still named the historical Guard `9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya` and treasury `Boz5Dukxrwi5MGRam8bGimokhZwFRLHFdVeEsjaTLgPH`. Recheck the production source commit and deployment-path override, then redeploy with the current bundled manifest. These API checks do not establish a particular dashboard deployment ID.
 
 ## Network scope
 

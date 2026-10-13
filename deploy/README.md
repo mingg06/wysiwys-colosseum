@@ -1,6 +1,6 @@
 # Vercel frontend and Railway runner
 
-For the verified fresh Guard deployment, start with [the teammate handoff](TEAMMATE-HANDOFF.md). The active manifest intentionally disables treasury actions until a fresh treasury is bootstrapped.
+For the existing verified Guard, fresh treasury and Active ordinary-DON workflow, start with [teammate handoff section 5](TEAMMATE-HANDOFF.md#5-activate-railway-and-vercel). The active manifest is complete and the clean live payment has passed; the hosted Railway-to-Vercel flow still needs deployment and verification. Bootstrap/CRE reprovisioning is separate from this hosting task.
 
 The browser calls the existing Next.js API routes on Vercel. Those server routes call the Railway runner with a bearer token. One continuous Railway process contains the finalized Solana listener, SQLite history and CRE triggering. All payments target Solana devnet. The site displays **Devnet, test keys only**.
 
@@ -29,6 +29,8 @@ For CLI-based infrastructure management, install the isolated SDK with `npm ci -
 For simulation, set `CRE_PROJECT_DIR=/opt/wysiwys/workflow/confidential-preflight`, `CRE_TARGET=staging-settings` and `CRE_BROADCAST=true`, and supply `CRE_API_KEY`, all three `CRE_*_SOLANA_DEVNET_RPC_URL` variables, a funded devnet `CRE_SOLANA_PRIVATE_KEY`, a throwaway `CRE_ETH_PRIVATE_KEY` and the matching `CRE_POLICY_DOCUMENT`. Screening additionally needs its provider key when enabled. `POLICY_FETCH_TOKEN` and `CRE_POLICY_STORE_TOKEN` must match if using the policy store. The runner seeds the initial policy into SQLite; member-proposed policies are stored there too. The workflow's `config.staging.json` policy-store URL is `http://127.0.0.1:8787`; set `PORT=8787` on this one-service simulation setup so dynamic policy lookup reaches the local runner. Map the Railway public domain's target port to 8787. Alternatively update that workflow configuration to match a different chosen port.
 
 For an already deployed live DON workflow, set `CRE_PROJECT_DIR` to an empty value and supply `CRE_WORKFLOW_ID` and `CRE_GATEWAY_PRIVATE_KEY`. Use a treasury whose immutable GuardConfig names the live forwarder. Configure CRE secrets in the Chainlink account separately. Live gateway triggering needs deployment access; a simulation API key alone does not grant it. Simulation is not live DON or TEE evidence.
+
+With `CRE_PROJECT_DIR` empty, the current startup path does not seed SQLite from `CRE_POLICY_DOCUMENT`. Register the approved private document through authenticated `POST /frontend/policies/register` using an opaque operator path, verify its returned public commitment, and configure matching Railway `POLICY_FETCH_TOKEN` / CRE Vault `POLICY_STORE_TOKEN` for dynamic policy retrieval. Follow the handoff's exact existing organization, caller identity and secret instructions. Merely setting a policy environment variable in live-only mode does not seed the store.
 
 Optional `REVIEW_TOKEN` protects manual `POST /review` retries. Optional `ADMIN_TOKEN` protects mode switching when both paths are configured. `CRE_TRIGGER_URL` and `CRE_TRIGGER_TOKEN` remain unset for the normal in-process paths. `BACKFILL_INTERVAL_MS=60000` preserves the current listener health contract.
 

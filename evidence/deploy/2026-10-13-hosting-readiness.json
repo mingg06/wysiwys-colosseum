@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-10-13T05:28:11.348Z",
+  "sourceCommit": "32428a858909064d7f64870bfbabe796bd90663e",
+  "checks": [
+    {
+      "name": "runner",
+      "url": "https://runner-production-1e71.up.railway.app/status",
+      "httpStatus": 404
+    },
+    {
+      "name": "appRunner",
+      "url": "https://wysiwys-colosseum.vercel.app/api/runner/status",
+      "httpStatus": 503,
+      "configured": true,
+      "reachable": true,
+      "ok": false
+    },
+    {
+      "name": "appConfig",
+      "url": "https://wysiwys-colosseum.vercel.app/api/squads/config",
+      "httpStatus": 200,
+      "multisig": "Boz5Dukxrwi5MGRam8bGimokhZwFRLHFdVeEsjaTLgPH",
+      "guardProgram": "9wCcjb74o2cWcFx8GimQQMcR1nJay9X86v1JiyV9kwya",
+      "executor": "8TpYUbf5RLGuqosw55hM1VDjgz8Z8z9VqXcynPBxQm1d"
+    }
+  ]
+}

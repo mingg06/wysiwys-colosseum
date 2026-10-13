@@ -41,4 +41,6 @@ The config override copies the receiver-free local config with `execution: "don"
 
 Railway runner activation and Vercel hookup remain pending the teammate runbook's prerequisites. Configure the deployed workflow ID and the dedicated caller key opaquely on the runner. A matching Vault document currently serves this policy; policy changes need the hosted content-addressed store and its matching `POLICY_STORE_TOKEN`/`POLICY_FETCH_TOKEN`. Neither the hosted policy store nor that fallback token was provisioned in this CRE deployment.
 
+Hosting execution is now detailed in [teammate handoff section 5](../../deploy/TEAMMATE-HANDOFF.md#5-activate-railway-and-vercel). Public checks at 13:28 Asia/Kuala_Lumpur returned runner HTTP 404, frontend runner HTTP 503 and a historical frontend Guard/treasury configuration; evidence is `evidence/deploy/2026-10-13-hosting-readiness.json`. Live-only startup skips automatic policy seeding, so use the existing authenticated registration route and verify the public policy commitment before testing default-policy treasury creation. Keep the existing Active workflow and immutable Guard configuration unchanged during ordinary hosting setup.
+
 The fresh bootstrap treasury has no SettlementBinding. It must not be described as settlement-order protected.
